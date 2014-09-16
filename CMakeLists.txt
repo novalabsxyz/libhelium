@@ -12,6 +12,7 @@ add_definitions(-D_GNU_SOURCE) # you need this or libuv will not be happy
 set(CMAKE_C_FLAGS "-Wall -std=c11 -L/usr/local/lib -luv")
 
 add_executable(helium helium.c)
+add_executable(sender sender.c)
 # add_library(helium STATIC helium.c)
 
-install(TARGETS helium DESTINATION lib)
+install(TARGETS helium sender DESTINATION lib)

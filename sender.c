@@ -55,39 +55,37 @@ void connection_callback(uv_stream_t *server, int status)
   printf("In connection callback!\n");
 }
 
-void set_broadcast(uv_udp_t *send_socket) {
-  struct sockaddr_in broadcast_addr;
-
-  // The IP address 0.0.0.0 is used to bind to all interfaces.
-  // Port 0 means that the OS randomly assigns a port.
-  uv_ip4_addr("0.0.0.0", 0, &broadcast_addr);
-
-  //  init, bind, broadcast
-  uv_udp_init(loop, send_socket);
-  uv_udp_bind(send_socket, (const struct sockaddr*)&broadcast_addr, 0);
-  uv_udp_set_broadcast(send_socket, 1);
+void connected_callback(uv_connect_t *connection, int status)
+{
+  printf("Connected!\n");
 }
 
 void send_callback(uv_udp_send_t *req, int status) {
   printf("In send callback! status is %d\n", status);
 }
 
+void writing_callback(uv_write_t *write_request, int status) {
+  printf("In writing callback!\n");
+}
+
 int main(int argc, char *argv[])
 {
   loop = uv_default_loop();
   
-  uv_udp_t server;
-  uv_udp_init(loop, &server);
+  uv_tcp_t client;
+  uv_tcp_init(loop, &client);
 
   struct sockaddr_in bind_addr;
   int err = uv_ip4_addr("0.0.0.0", 40026, &bind_addr);
   assert(!err);
-  set_broadcast(&server);
+
+  uv_connect_t connection;
+  uv_tcp_connect(&connection, &client, (struct sockaddr*)&bind_addr, connected_callback);
 
   uv_buf_t to_send = uv_buf_init("wooo", 4);
   
-  uv_udp_send_t send_request;
-  err = uv_udp_send(&send_request, &server, &to_send, 1, (struct sockaddr*)&bind_addr, send_callback);
+  uv_write_t write_request;
+  err = uv_write(&write_request, (uv_stream_t*)&client, &to_send, 1, writing_callback);
   assert(!err);
   
   uv_run(loop, UV_RUN_DEFAULT);

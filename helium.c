@@ -53,20 +53,17 @@ void connection_callback(uv_stream_t *server, int status)
   }
 }
 
-void idle_callback(uv_idle_t *idler) {
-  
-}
 
 int main(int argc, char *argv[])
 {
   loop = uv_default_loop();
-  
   uv_tcp_t server;
   uv_tcp_init(loop, &server);
 
   struct sockaddr_in bind_addr;
   int err = uv_ip4_addr("0.0.0.0", 40026, &bind_addr);
   assert(!err);
+  printf("Listening on 0.0.0.0:40026\n");
 
   err = uv_tcp_bind(&server, (struct sockaddr*)&bind_addr, 0);
   assert(!err);
