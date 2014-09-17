@@ -13,81 +13,51 @@ const char* libhelium_version(void)
   return LIBHELIUM_VERSION;
 }
 
-void reading_callback(uv_stream_t *stream, ssize_t count, const uv_buf_t *buf)
-{
-  printf("In reading callback");
-  fflush(stdout);
-  if (count == UV_EOF) {
-    printf("Hit EOF\n");
-    uv_close((uv_handle_t *)stream, NULL);
-  }
-  else if (count > 0) {
-    printf("Got %ld bytes\n", count);
-    printf("Contents: %s", buf->base);
-  }
-}
-
 void allocation_callback(uv_handle_t *handle, size_t size, uv_buf_t *buf)
 {
-  printf("In allocation callback");
+  printf("In allocation callback\n");
   char *chunk = malloc(size);
   assert(chunk != NULL);
   *buf = uv_buf_init(chunk, size);
 }
 
-void connection_callback(uv_stream_t *server, int status)
+void udp_recv_callback(uv_udp_t *handle, ssize_t count, const uv_buf_t *buf, const struct sockaddr *addr, unsigned int flags)
 {
-  printf("In connection callback");
-  uv_udp_t *client = malloc(sizeof(uv_udp_t));
-  assert(client != NULL);
-  uv_udp_init(loop, client);
-
-  int err = uv_accept(server, (uv_stream_t*)client);
-  if (err) {
-    printf("Error accepting connection\n");
-    uv_close((uv_handle_t*)client, NULL);
-  }
-  else {
-    uv_read_start((uv_stream_t*)client, allocation_callback, reading_callback);
-  }
-
-  
-  printf("In connection callback!\n");
+  printf("In recv callback! Got %ld packets, received text %s\n", count, buf->base);
 }
 
-void connected_callback(uv_connect_t *connection, int status)
+void udp_send_callback(uv_udp_send_t *req, int status)
 {
-  printf("Connected!\n");
+  printf("In send callback!\n");
 }
 
-void send_callback(uv_udp_send_t *req, int status) {
-  printf("In send callback! status is %d\n", status);
-}
-
-void writing_callback(uv_write_t *write_request, int status) {
-  printf("In writing callback!\n");
-}
+uv_udp_t send_socket;
 
 int main(int argc, char *argv[])
 {
   loop = uv_default_loop();
   
-  uv_tcp_t client;
-  uv_tcp_init(loop, &client);
-
+  uv_udp_init(loop, &send_socket);
+  
   struct sockaddr_in bind_addr;
-  int err = uv_ip4_addr("0.0.0.0", 40026, &bind_addr);
-  assert(!err);
-
-  uv_connect_t connection;
-  uv_tcp_connect(&connection, &client, (struct sockaddr*)&bind_addr, connected_callback);
-
-  uv_buf_t to_send = uv_buf_init("wooo", 4);
-  
-  uv_write_t write_request;
-  err = uv_write(&write_request, (uv_stream_t*)&client, &to_send, 1, writing_callback);
+  int err = uv_ip4_addr("255.255.255.255", 40026, &bind_addr);
   assert(!err);
   
+  err = uv_udp_bind(&send_socket, (struct sockaddr*)&bind_addr, UV_UDP_REUSEADDR);
+  assert(!err);
+  
+  uv_udp_set_broadcast(&send_socket, 1);
+  
+  uv_buf_t message = { "hello world", 11 };
+  
+  uv_udp_send_t send_request;
+  err = uv_udp_send(&send_request, &send_socket, &message, 1, (struct sockaddr*)&bind_addr, NULL);
+  assert(!err);
+  
+  
+  
+  printf("Entering libuv loop...\n");
+
   uv_run(loop, UV_RUN_DEFAULT);
 
   return 0;
