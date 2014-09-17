@@ -40,7 +40,11 @@ int main(int argc, char *argv[])
   uv_udp_init(loop, &send_socket);
   
   struct sockaddr_in bind_addr;
-  int err = uv_ip4_addr("255.255.255.255", 40026, &bind_addr);
+  struct sockaddr_in send_addr;
+  int err = uv_ip4_addr("0.0.0.0", 0, &bind_addr);
+  assert(!err);
+
+  err = uv_ip4_addr("127.0.0.1", 40026, &send_addr);
   assert(!err);
   
   err = uv_udp_bind(&send_socket, (struct sockaddr*)&bind_addr, UV_UDP_REUSEADDR);
@@ -51,7 +55,7 @@ int main(int argc, char *argv[])
   uv_buf_t message = { "hello world", 11 };
   
   uv_udp_send_t send_request;
-  err = uv_udp_send(&send_request, &send_socket, &message, 1, (struct sockaddr*)&bind_addr, NULL);
+  err = uv_udp_send(&send_request, &send_socket, &message, 1, (struct sockaddr*)&send_addr, NULL);
   assert(!err);
   
   
