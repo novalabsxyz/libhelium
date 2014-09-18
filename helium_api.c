@@ -70,12 +70,25 @@ int helium_init(helium_connection_t *conn, _Bool use_proxy)
 
 int helium_send(helium_connection_t *conn, uint64_t macaddr, helium_token_t token, char *message, size_t count)
 {
-  // TODO
-  uv_buf_t buf = { message, count };
-  uv_udp_send_t send_request;
-  send_request.data = conn;
-  uv_udp_send(&send_request, &conn->udp_handle, &buf, 1, NULL /* TODO */, _helium_send_callback);
+  char *target = NULL;
+  asprintf(&target, "%lX.d.helium.com", macaddr);
 
+  if (target == NULL) {
+    return -1;
+  }
+
+  struct addrinfo *address = NULL;
+  int err = getaddrinfo(target, NULL, NULL, &address);
+
+  if (err != 0) {
+    return -1;
+  }
+
+  uv_buf_t buf = { message, count };
+  uv_udp_send_t send_req;
+  send_req.data = conn;
+  uv_udp_send(&send_req, &conn->udp_handle, &buf, 1, address->ai_addr, _helium_send_callback);
+  
   return 0;
 }
 
