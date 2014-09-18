@@ -23,9 +23,8 @@ typedef void (^helium_callback_b)(const helium_connection_t *conn, uint64_t send
 
 typedef void (*helium_callback_t)(const helium_connection_t *conn, uint64_t sender_mac, char * const message, size_t count);
 
-int helium_init(helium_connection_t *conn, const char* ipv4_proxy_address);
+int helium_init(helium_connection_t *conn, _Bool use_proxy);
 int helium_close(helium_connection_t *conn);
-int helium_connect(helium_connection_t *conn, uint64_t dest_mac, helium_callback_t cb);
-int helium_send(helium_connection_t *conn, uint64_t macaddr, helium_token_t token, const char *message, size_t count);
+int helium_send(helium_connection_t *conn, uint64_t macaddr, helium_token_t token, char *message, size_t count);
 
 #endif /* HELIUM_API_H */
