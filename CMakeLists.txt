@@ -13,6 +13,6 @@ set(CMAKE_C_FLAGS "-Wall -std=c11 -L/usr/local/lib -luv")
 
 add_executable(helium helium.c)
 add_executable(sender sender.c)
-# add_library(helium STATIC helium.c)
+add_library(lhelium STATIC helium_api.c)
 
-install(TARGETS helium sender DESTINATION lib)
+install(TARGETS helium sender lhelium DESTINATION lib)
