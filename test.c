@@ -22,7 +22,11 @@ int main(int argc, char *argv[]) {
     return 1;
   }
 
-  helium_init(&conn, proxy, test_callback);
+  // helium_init(&conn, proxy, test_callback);
+
+  helium_init_b(&conn, proxy, ^(const helium_connection_t *conn, uint64_t mac, char *msg, size_t n) {
+      
+  });
 
   printf("blargh\n");
 

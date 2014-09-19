@@ -97,7 +97,7 @@ int helium_init(helium_connection_t *conn, char *proxy_addr, helium_callback_t c
 int helium_init_b(helium_connection_t *conn, char *proxy_addr, helium_block_t block)
 {
   conn->callback_block = block; // Block_copy(block) here??
-  return helium_init(&conn, proxy_addr, _helium_block_callback);
+  return helium_init(conn, proxy_addr, _helium_block_callback);
 }
 
 #endif
