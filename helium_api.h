@@ -23,7 +23,16 @@ typedef void (^helium_callback_b)(const helium_connection_t *conn, uint64_t send
 
 typedef void (*helium_callback_t)(const helium_connection_t *conn, uint64_t sender_mac, char * const message, size_t count);
 
-int helium_init(helium_connection_t *conn, _Bool use_proxy);
+struct helium_connection_s {
+  uv_loop_t *loop;
+  uv_udp_t udp_handle;
+  struct addrinfo connection_address;
+  char *proxy_addr;
+  // should this be a hashtable of mac addresses => callbacks? probably
+  helium_callback_t callback;
+};
+
+int helium_init(helium_connection_t *conn, char *proxy_addr);
 int helium_close(helium_connection_t *conn);
 int helium_send(helium_connection_t *conn, uint64_t macaddr, helium_token_t token, char *message, size_t count);
 
