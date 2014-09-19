@@ -25,6 +25,7 @@ typedef void (*helium_callback_t)(const helium_connection_t *conn, uint64_t send
 
 struct helium_connection_s {
   uv_loop_t *loop;
+  uv_thread_t thread;
   uv_udp_t udp_handle;
   struct addrinfo connection_address;
   char *proxy_addr;
@@ -32,7 +33,7 @@ struct helium_connection_s {
   helium_callback_t callback;
 };
 
-int helium_init(helium_connection_t *conn, char *proxy_addr);
+int helium_init(helium_connection_t *conn, char *proxy_addr, helium_callback_t callback);
 int helium_close(helium_connection_t *conn);
 int helium_send(helium_connection_t *conn, uint64_t macaddr, helium_token_t token, char *message, size_t count);
 
