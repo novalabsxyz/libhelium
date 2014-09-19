@@ -7,7 +7,7 @@
 
 void _helium_buffer_alloc_callback(uv_handle_t *handle, size_t suggested, uv_buf_t *dst)
 {
-  printf("in allocate, allocating %d bytes\n", suggested);
+  printf("in allocate, allocating %zd bytes\n", suggested);
   char *chunk = malloc(suggested);
   assert(chunk != NULL);
   memset(chunk, 0, suggested);
@@ -26,6 +26,13 @@ void _helium_udp_recv_callback(uv_udp_t *handle, ssize_t nread, const uv_buf_t *
 
   conn->callback(conn, macaddr, buf->base, nread);
 }
+
+#if HAVE_BLOCKS
+void _helium_block_callback(const helium_connection_t *conn, uint64_t sender_mac, char * const message, size_t count)
+{
+  conn->callback_block(conn, sender_mac, message, count);
+}
+#endif
 
 void _helium_send_callback(uv_udp_send_t *req, int status)
 {
@@ -85,6 +92,16 @@ int helium_init(helium_connection_t *conn, char *proxy_addr, helium_callback_t c
   return 0;
 }
 
+#if HAVE_BLOCKS
+
+int helium_init_b(helium_connection_t *conn, char *proxy_addr, helium_block_t block)
+{
+  conn->callback_block = block; // Block_copy(block) here??
+  return helium_init(&conn, proxy_addr, _helium_block_callback);
+}
+
+#endif
+
 int helium_send(helium_connection_t *conn, uint64_t macaddr, helium_token_t token, char *message, size_t count)
 {
   char *target = NULL;
@@ -103,6 +120,8 @@ int helium_send(helium_connection_t *conn, uint64_t macaddr, helium_token_t toke
     hints.ai_family=AF_INET;
   }
 
+  // using the synchronous getaddrinfo() here; is this a portability problem?
+  // do we need to use uv_getaddrinfo()?
   struct addrinfo *address = NULL;
   int err = getaddrinfo(target, "2169", &hints, &address);
 
