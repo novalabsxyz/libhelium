@@ -5,7 +5,8 @@
 #include "helium_api.h"
 
 void test_callback(const helium_connection_t *conn, uint64_t sender_mac, char * const message, size_t count) {
-  printf("callback got %s %zu\n", message, count);
+  printf("callback got %s %zd\n", message, count);
+  printf("Mac address is %luX", sender_mac);
 }
 
 int main(int argc, char *argv[]) {

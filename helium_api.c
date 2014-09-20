@@ -15,6 +15,7 @@ struct helium_send_req_s {
 
 void _helium_buffer_alloc_callback(uv_handle_t *handle, size_t suggested, uv_buf_t *dst)
 {
+  printf("in allocate, allocating %zd bytes\n", suggested);
   char *chunk = malloc(suggested);
   assert(chunk != NULL);
   memset(chunk, 0, suggested);
@@ -26,11 +27,48 @@ void _helium_udp_recv_callback(uv_udp_t *handle, ssize_t nread, const uv_buf_t *
   if (nread == 0) {
     return;
   }
-  uint64_t macaddr = 0; // TODO: extract this from the sockaddr with getnameinfo(3)
+  uint64_t macaddr = 0;
+  const size_t BUFLEN = 256;
+
+  char host[BUFLEN];
+  char serv[BUFLEN];
 
   assert(handle->data != NULL);
   helium_connection_t *conn = (helium_connection_t *)handle->data;
 
+  // Assumption: NULL proxy address means we're in IPv6 mode.
+  // Used to have the larger of the two sizes here; that could be safer.
+  const size_t enough
+    = conn->proxy_addr == NULL
+    ? sizeof(struct sockaddr_in6)
+    : sizeof(struct sockaddr);
+
+  int err = getnameinfo(addr, enough, host, BUFLEN, serv, BUFLEN, 0);
+
+
+  if (err != 0) {
+    const char *err = gai_strerror(errno);
+    fprintf(stderr, "Error in Helium callback: getnameinfo failed, reason: %s\n", err);
+    return;
+  }
+
+  if (strncmp(host, "localhost", BUFSIZ) == 0) {
+    // testing
+    fprintf(stderr, "from localhost, just testing\n");
+    strcpy(host, "deadbeef.d.helium.co");
+  }
+
+  printf("Received host is %s\n", host);
+
+  unsigned int whatever = 0;
+  err = sscanf(host, "%x.d.helium.co", &whatever);
+  macaddr = whatever;
+  
+  if (err == 0) {
+    fprintf(stderr, "Couldn't extract mac address from host %s\n", host);
+  } else {
+    fprintf(stdout, "Extracted MAC is %lX\n", macaddr);
+  }
   conn->callback(conn, macaddr, buf->base, nread);
 }
 

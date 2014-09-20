@@ -1,0 +1,4 @@
+Get a logging framework in here.
+Get an uncrustify setup.
+Get a scan-build setup.
+Make the Makefile actually, you know, work.
