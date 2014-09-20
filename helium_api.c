@@ -3,7 +3,9 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
+
 #include "helium_api.h"
+#include "logging.h"
 
 struct helium_send_req_s {
   uint64_t macaddr;
@@ -15,7 +17,7 @@ struct helium_send_req_s {
 
 void _helium_buffer_alloc_callback(uv_handle_t *handle, size_t suggested, uv_buf_t *dst)
 {
-  printf("in allocate, allocating %zd bytes\n", suggested);
+  helium_dbg("in allocate, allocating %zd bytes", suggested);
   char *chunk = malloc(suggested);
   assert(chunk != NULL);
   memset(chunk, 0, suggested);
@@ -48,13 +50,13 @@ void _helium_udp_recv_callback(uv_udp_t *handle, ssize_t nread, const uv_buf_t *
 
   if (err != 0) {
     const char *err = gai_strerror(errno);
-    fprintf(stderr, "Error in Helium callback: getnameinfo failed, reason: %s\n", err);
+    helium_log(LOG_ERR, "Error in Helium callback: getnameinfo failed, reason: %s", err);
     return;
   }
 
   if (strncmp(host, "localhost", BUFSIZ) == 0) {
     // testing
-    fprintf(stderr, "from localhost, just testing\n");
+    helium_dbg("from localhost, just testing");
     strcpy(host, "deadbeef.d.helium.co");
   }
 
@@ -65,9 +67,9 @@ void _helium_udp_recv_callback(uv_udp_t *handle, ssize_t nread, const uv_buf_t *
   macaddr = whatever;
   
   if (err == 0) {
-    fprintf(stderr, "Couldn't extract mac address from host %s\n", host);
+    helium_log(LOG_WARNING, "Couldn't extract mac address from host %s\n", host);
   } else {
-    fprintf(stdout, "Extracted MAC is %lX\n", macaddr);
+    helium_dbg("Extracted MAC is %lX\n", macaddr);
   }
   conn->callback(conn, macaddr, buf->base, nread);
 }
@@ -82,7 +84,7 @@ void _helium_block_callback(const helium_connection_t *conn, uint64_t sender_mac
 void _helium_send_callback(uv_udp_send_t *req, int status)
 {
 
-  printf("sent %d\n", status);
+  helium_dbg("In send callback, sent %d\n", status);
   if (status == 0) {
     free(req);
   }
@@ -96,7 +98,7 @@ void _helium_do_udp_send(uv_async_t *handle) {
   struct addrinfo hints = {AF_UNSPEC, SOCK_DGRAM, 0, 0};
   if (conn->proxy_addr == NULL) {
     asprintf(&target, "%lX.d.helium.io", req->macaddr);
-    printf("looking up %s\n", target);
+    helium_dbg("looking up %s", target);
     if (target == NULL) {
       return;
     }
@@ -140,11 +142,11 @@ int helium_init(helium_connection_t *conn, char *proxy_addr, helium_callback_t c
   struct sockaddr_in v4addr;
   struct sockaddr_in6 v6addr;
   if (proxy_addr != NULL) {
-    printf("binding ipv4\n");
+    helium_dbg("binding ipv4");
     err = uv_ip4_addr("0.0.0.0", 40026, &v4addr);
   }
   else {
-    printf("binding ipv6\n");
+    helium_dbg("binding ipv6");
     err = uv_ip6_addr("::", 40026, &v6addr);
   }
 
@@ -198,14 +200,14 @@ int helium_send(helium_connection_t *conn, uint64_t macaddr, helium_token_t toke
   struct addrinfo hints = {AF_UNSPEC, SOCK_DGRAM, 0, 0};
   if (conn->proxy_addr == NULL) {
     asprintf(&target, "%lX.d.helium.io", macaddr);
-    printf("looking up %s\n", target);
+    helium_dbg("looking up %s", target);
     if (target == NULL) {
       return -1;
     }
     // only return ipv6 addresses
     hints.ai_family = AF_INET6;
   } else {
-    printf("using ipv4 proxy\n");
+    helium_dbg("using ipv4 proxy");
     target = conn->proxy_addr;
     hints.ai_family=AF_INET;
   }

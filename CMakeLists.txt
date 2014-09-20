@@ -12,7 +12,7 @@ add_definitions(-DLIBHELIUM_VERSION="${VERSION}")
 add_definitions(-D_GNU_SOURCE) # you need this or libuv will not be happy
 
 link_directories(/usr/local/lib)
-add_library(helium STATIC helium_api.c)
+add_library(helium STATIC logging.c helium_api.c)
 
 add_executable(helium_test test.c)
 target_link_libraries(helium_test helium.a)

@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include "helium_api.h"
+#include "logging.h"
 
 void test_callback(const helium_connection_t *conn, uint64_t sender_mac, char * const message, size_t count)
 {
@@ -10,8 +11,9 @@ void test_callback(const helium_connection_t *conn, uint64_t sender_mac, char * 
   printf("Mac address is %luX", sender_mac);
 }
 
-int main(int argc, char *argv[]) {
-
+int main(int argc, char *argv[])
+{
+  helium_logging_start();
   char *proxy = NULL;
   helium_token_t token = "abcdefghijklmnop";
   helium_connection_t conn;
