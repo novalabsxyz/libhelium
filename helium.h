@@ -7,6 +7,8 @@
 #ifndef HELIUM_API_H
 #define HELIUM_API_H
 
+const char *libhelium_version();
+
 // I think char[16] is preferable to char* here because there
 // may be embedded NULs therein, and people think of char* as
 // NUL-terminated.

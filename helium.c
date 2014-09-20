@@ -7,6 +7,11 @@
 #include "helium.h"
 #include "logging.h"
 
+const char *libhelium_version()
+{
+  return LIBHELIUM_VERSION;
+}
+
 struct helium_send_req_s {
   uint64_t macaddr;
   helium_token_t token;
