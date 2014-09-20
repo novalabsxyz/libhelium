@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "helium_api.h"
+#include "helium.h"
 #include "logging.h"
 
 void test_callback(const helium_connection_t *conn, uint64_t sender_mac, char * const message, size_t count)

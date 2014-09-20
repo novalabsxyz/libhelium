@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "helium_api.h"
+#include "helium.h"
 #include "logging.h"
 
 struct helium_send_req_s {

@@ -1,5 +1,6 @@
 // logging.c
 
+#include <stdlib.h>
 #include <syslog.h>
 
 void helium_logging_start()
