@@ -17,7 +17,6 @@ int main(int argc, char *argv[])
   char *proxy = NULL;
   helium_token_t token = "abcdefghijklmnop";
   helium_connection_t conn;
-  printf("argc %d\n", argc);
   if (argc == 3 && strcmp("-p", argv[1]) == 0) {
     printf("proxy %s\n", argv[2]);
     proxy = argv[2];
@@ -28,7 +27,7 @@ int main(int argc, char *argv[])
 
 #if HAVE_BLOCKS
   helium_init_b(&conn, proxy, ^(const helium_connection_t *conn, uint64_t mac, char *msg, size_t n) {
-      printf("Block callback got %zu bytes from message %s", n, msg);
+      helium_dbg("Block callback got %zu bytes from message %s", n, msg);
   });
 #else
   helium_init(&conn, proxy, test_callback);
@@ -49,7 +48,7 @@ int main(int argc, char *argv[])
       }
 
       int  err = helium_send(&conn, 0xdeadbeef, token, line, strlen(line));
-      printf("send result %d\n", err);
+      helium_dbg("send result %d\n", err);
     }
   }
   return 0;

@@ -1,4 +1,5 @@
-Get a logging framework in here.
+Should we have a helium_main or helium_run function?
+We can't hit malloc in every uv_alloc_cb callback. We need some sort of slab allocator. Eventually
 Get an uncrustify setup.
 Get a scan-build setup.
 Make the Makefile actually, you know, work.

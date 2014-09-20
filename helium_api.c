@@ -54,13 +54,13 @@ void _helium_udp_recv_callback(uv_udp_t *handle, ssize_t nread, const uv_buf_t *
     return;
   }
 
-  if (strncmp(host, "localhost", BUFSIZ) == 0) {
+  if (strncmp(host, "localhost", BUFLEN) == 0) {
     // testing
     helium_dbg("from localhost, just testing");
     strcpy(host, "deadbeef.d.helium.co");
   }
 
-  printf("Received host is %s\n", host);
+  helium_dbg("Received host is %s\n", host);
 
   unsigned int whatever = 0;
   err = sscanf(host, "%x.d.helium.co", &whatever);
@@ -71,6 +71,8 @@ void _helium_udp_recv_callback(uv_udp_t *handle, ssize_t nread, const uv_buf_t *
   } else {
     helium_dbg("Extracted MAC is %lX\n", macaddr);
   }
+
+  // should we ever call this when nread < 1?
   conn->callback(conn, macaddr, buf->base, nread);
 }
 
@@ -90,8 +92,8 @@ void _helium_send_callback(uv_udp_send_t *req, int status)
   }
 }
 
-void _helium_do_udp_send(uv_async_t *handle) {
-
+void _helium_do_udp_send(uv_async_t *handle)
+{
   struct helium_send_req_s *req = (struct helium_send_req_s*)handle->data;
   helium_connection_t *conn = req->conn;
   char *target = NULL;
@@ -123,7 +125,8 @@ void _helium_do_udp_send(uv_async_t *handle) {
   err = uv_udp_send(send_req, &conn->udp_handle, &buf, 1, address->ai_addr, _helium_send_callback);
 }
 
-void _bootup(void *arg) {
+void _bootup(void *arg)
+{
   helium_connection_t *conn = (helium_connection_t *)arg;
   uv_run(conn->loop, UV_RUN_DEFAULT);
 }
