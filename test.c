@@ -4,8 +4,9 @@
 
 #include "helium_api.h"
 
-void test_callback(const helium_connection_t *conn, uint64_t sender_mac, char * const message, size_t count) {
-  printf("callback got %s %zd\n", message, count);
+void test_callback(const helium_connection_t *conn, uint64_t sender_mac, char * const message, size_t count)
+{
+  printf("Function-pointer callback got %s %zd\n", message, count);
   printf("Mac address is %luX", sender_mac);
 }
 
@@ -23,8 +24,17 @@ int main(int argc, char *argv[]) {
     return 1;
   }
 
+#if HAVE_BLOCKS
+  helium_init_b(&conn, proxy, ^(const helium_connection_t *conn, uint64_t mac, char *msg, size_t n) {
+      printf("Block callback got %zu bytes from message %s", n, msg);
+  });
+#else
   helium_init(&conn, proxy, test_callback);
+#endif
 
+    
+  
+ 
   printf("blargh\n");
 
   char line[256];
