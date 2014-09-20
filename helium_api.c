@@ -5,9 +5,16 @@
 #include <string.h>
 #include "helium_api.h"
 
+struct helium_send_req_s {
+  uint64_t macaddr;
+  helium_token_t token;
+  char *message;
+  size_t count;
+  helium_connection_t *conn;
+};
+
 void _helium_buffer_alloc_callback(uv_handle_t *handle, size_t suggested, uv_buf_t *dst)
 {
-  printf("in allocate, allocating %d bytes\n", suggested);
   char *chunk = malloc(suggested);
   assert(chunk != NULL);
   memset(chunk, 0, suggested);
@@ -36,6 +43,39 @@ void _helium_send_callback(uv_udp_send_t *req, int status)
   }
 }
 
+void _helium_do_udp_send(uv_async_t *handle) {
+
+  struct helium_send_req_s *req = (struct helium_send_req_s*)handle->data;
+  helium_connection_t *conn = req->conn;
+  char *target = NULL;
+  struct addrinfo hints = {AF_UNSPEC, SOCK_DGRAM, 0, 0};
+  if (conn->proxy_addr == NULL) {
+    asprintf(&target, "%lX.d.helium.io", req->macaddr);
+    printf("looking up %s\n", target);
+    if (target == NULL) {
+      return;
+    }
+    // only return ipv6 addresses
+    hints.ai_family = AF_INET6;
+  } else {
+    printf("using ipv4 proxy\n");
+    target = conn->proxy_addr;
+    hints.ai_family=AF_INET;
+  }
+
+  struct addrinfo *address = NULL;
+  int err = getaddrinfo(target, "2169", &hints, &address);
+
+  if (err != 0) {
+    return;
+  }
+
+  uv_buf_t buf = { req->message, req->count };
+  uv_udp_send_t *send_req = malloc(sizeof(uv_udp_send_t));
+  send_req->data = conn;
+  err = uv_udp_send(send_req, &conn->udp_handle, &buf, 1, address->ai_addr, _helium_send_callback);
+}
+
 void _bootup(void *arg) {
   helium_connection_t *conn = (helium_connection_t *)arg;
   uv_run(conn->loop, UV_RUN_DEFAULT);
@@ -45,6 +85,7 @@ int helium_init(helium_connection_t *conn, char *proxy_addr, helium_callback_t c
 {
   // should we parameterize this function so as to allow a passed loop?
   conn->loop = uv_default_loop();
+  uv_async_init(conn->loop, &conn->async, _helium_do_udp_send);
   int err = uv_udp_init(conn->loop, &conn->udp_handle);
 
   if (err) {
@@ -87,37 +128,16 @@ int helium_init(helium_connection_t *conn, char *proxy_addr, helium_callback_t c
 
 int helium_send(helium_connection_t *conn, uint64_t macaddr, helium_token_t token, char *message, size_t count)
 {
-  char *target = NULL;
-  struct addrinfo hints = {AF_UNSPEC, SOCK_DGRAM, 0, 0};
-  if (conn->proxy_addr == NULL) {
-    asprintf(&target, "%lX.d.helium.io", macaddr);
-    printf("looking up %s\n", target);
-    if (target == NULL) {
-      return -1;
-    }
-    // only return ipv6 addresses
-    hints.ai_family = AF_INET6;
-  } else {
-    printf("using ipv4 proxy\n");
-    target = conn->proxy_addr;
-    hints.ai_family=AF_INET;
-  }
-
-  struct addrinfo *address = NULL;
-  int err = getaddrinfo(target, "2169", &hints, &address);
-
-  if (err != 0) {
-    return -1;
-  }
-
-  uv_buf_t buf = { message, count };
-  uv_udp_send_t *send_req = malloc(sizeof(uv_udp_send_t));
-  send_req->data = conn;
-  err = uv_udp_send(send_req, &conn->udp_handle, &buf, 1, address->ai_addr, _helium_send_callback);
-  if (err != 0) {
-    return -1;
-  }
-
+  struct helium_send_req_s *req = malloc(sizeof(struct helium_send_req_s));
+  req->macaddr = macaddr;
+  memcpy(req->token, token, 16);
+  req->message = malloc(count);
+  memcpy(req->message, message, count);
+  req->count = count;
+  req->conn = conn;
+  conn->async.data = (void*)req;
+  uv_async_send(&conn->async);
+  // TODO we should also pass our own async message thing and have our own libuv loop so we can stall here waiting for the reply
   return 0;
 }
 
