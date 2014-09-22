@@ -6,6 +6,7 @@
 void helium_logging_start()
 {
   openlog("libhelium", LOG_PERROR | LOG_NDELAY | LOG_PID, LOG_USER);
+  atexit(closelog);
 }
 
 void helium_log(int priority, const char *format, ...)
