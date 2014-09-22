@@ -10,13 +10,15 @@ set(VERSION_PATCH "1")
 set(VERSION "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}")
 add_definitions(-DLIBHELIUM_VERSION="${VERSION}")
 add_definitions(-D_GNU_SOURCE) # you need this or libuv will not be happy
-
+include_directories(/usr/local/include)
 link_directories(/usr/local/lib)
+link_directories(/usr/local/include)
 add_library(helium STATIC logging.c helium.c)
 
 add_executable(helium_test test.c)
 target_link_libraries(helium_test helium.a)
 set_target_properties(helium_test PROPERTIES LINK_FLAGS "-L.")
+
 
 message("${CMAKE_C_COMPILER}")
 if(CMAKE_C_COMPILER MATCHES "clang")
@@ -31,6 +33,7 @@ else()
   set(CMAKE_C_FLAGS "-Wall -std=c11")
   target_link_libraries(helium uv)
   target_link_libraries(helium_test uv)
+  set(CMAKE_INCLUDE_PATH )
 endif(CMAKE_C_COMPILER MATCHES "clang")
 
 install(TARGETS helium DESTINATION lib)
