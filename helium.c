@@ -186,6 +186,11 @@ void _helium_do_udp_send(uv_async_t *handle)
     printf("using ipv4 proxy\n");
     target = conn->proxy_addr;
     hints.ai_family=AF_INET;
+    // make room for prefixing the MAC onto the packet
+    req->message = realloc(req->message, req->count+8);
+    memmove(req->message+8, req->message, req->count);
+    memcpy(req->message, (void*)&req->macaddr, 8);
+    req->count += 8;
   }
 
   struct addrinfo *address = NULL;
@@ -262,52 +267,26 @@ int helium_init_b(helium_connection_t *conn, char *proxy_addr, helium_block_t bl
 
 #endif
 
-int helium_send(helium_connection_t *conn, uint64_t macaddr, helium_token_t token, char *message, size_t count)
+int helium_send(helium_connection_t *conn, uint64_t macaddr, helium_token_t token, unsigned char *message, size_t count)
 {
   struct helium_send_req_s *req = malloc(sizeof(struct helium_send_req_s));
+
+  unsigned char *packet;
+  count = libhelium_encrypt_packet(token, message, &packet);
+  if (count < 1) {
+    return -1;
+  }
+
   req->macaddr = macaddr;
   memcpy(req->token, token, 16);
   req->message = malloc(count);
-  memcpy(req->message, message, count);
+  memcpy(req->message, packet, count);
   req->count = count;
   req->conn = conn;
   conn->async.data = (void*)req;
   uv_async_send(&conn->async);
   // TODO we should also pass our own async message thing and have our own libuv loop so we can stall here waiting for the reply
 
-  char *target = NULL;
-  struct addrinfo hints = {AF_UNSPEC, SOCK_DGRAM, 0, 0};
-  if (conn->proxy_addr == NULL) {
-    asprintf(&target, "%lX.d.helium.io", macaddr);
-    helium_dbg("looking up %s", target);
-    if (target == NULL) {
-      return -1;
-    }
-    // only return ipv6 addresses
-    hints.ai_family = AF_INET6;
-  } else {
-    helium_dbg("using ipv4 proxy");
-    target = conn->proxy_addr;
-    hints.ai_family=AF_INET;
-  }
-
-  // using the synchronous getaddrinfo() here; is this a portability problem?
-  // do we need to use uv_getaddrinfo()?
-  struct addrinfo *address = NULL;
-  int err = getaddrinfo(target, "2169", &hints, &address);
-
-  if (err != 0) {
-    return -1;
-  }
-
-  uv_buf_t buf = { message, count };
-  uv_udp_send_t *send_req = malloc(sizeof(uv_udp_send_t));
-  send_req->data = conn;
-  err = uv_udp_send(send_req, &conn->udp_handle, &buf, 1, address->ai_addr, _helium_send_callback);
-  if (err != 0) {
-    return -1;
-  }
-  
   return 0;
 }
 

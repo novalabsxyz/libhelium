@@ -12,7 +12,7 @@ const char *libhelium_version();
 // I think char[16] is preferable to char* here because there
 // may be embedded NULs therein, and people think of char* as
 // NUL-terminated.
-typedef char helium_token_t[16];
+typedef unsigned char helium_token_t[16];
 
 struct helium_connection_s;
 
@@ -46,6 +46,6 @@ int helium_init_b(helium_connection_t *conn, char *proxy_addr, helium_block_t ca
 #endif
 
 int helium_close(helium_connection_t *conn);
-int helium_send(helium_connection_t *conn, uint64_t macaddr, helium_token_t token, char *message, size_t count);
+int helium_send(helium_connection_t *conn, uint64_t macaddr, helium_token_t token, unsigned char *message, size_t count);
 
 #endif /* HELIUM_API_H */

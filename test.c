@@ -15,7 +15,7 @@ int main(int argc, char *argv[])
 {
   helium_logging_start();
   char *proxy = NULL;
-  helium_token_t token = "abcdefghijklmnop";
+  //helium_token_t token = "abcdefghijklmnop";
   helium_connection_t conn;
   if (argc == 3 && strcmp("-p", argv[1]) == 0) {
     printf("proxy %s\n", argv[2]);
@@ -33,22 +33,20 @@ int main(int argc, char *argv[])
   helium_init(&conn, proxy, test_callback);
 #endif
 
-    
-  
- 
-  printf("blargh\n");
-
-  char line[256];
+  uint64_t mac;
+  helium_token_t token;
+  char message[1024];
+  int ret;
   while(1) {
-    char *p = fgets (line, 256, stdin);
-    if (p != NULL) {
-      size_t last = strlen(line) - 1;
-      if (line[last] == '\n') {
-        line[last] = '\0';
-      }
-
-      int  err = helium_send(&conn, 0xdeadbeef, token, line, strlen(line));
+    ret = scanf("%lx %16c %[^\n]", &mac, token, message);
+    if (ret > 0) {
+      printf("MAC %lu %s %s\n", mac, token, message);
+      int  err = helium_send(&conn, mac, token, (unsigned char*)message, strlen(message));
       helium_dbg("send result %d\n", err);
+    } else {
+      // invalid line, consume it
+      fgets(message, 1024, stdin);
+      printf("USAGE: <MAC> <Token> <Message>\n");
     }
   }
   return 0;
