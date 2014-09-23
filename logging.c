@@ -2,6 +2,7 @@
 
 #include <stdlib.h>
 #include <syslog.h>
+#include <stdarg.h>
 
 void helium_logging_start()
 {
