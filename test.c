@@ -2,6 +2,9 @@
 #include <stdio.h>
 #include <string.h>
 
+#include <openssl/evp.h>
+#include <openssl/bio.h>
+
 #include "helium.h"
 #include "logging.h"
 
@@ -9,6 +12,20 @@ void test_callback(const helium_connection_t *conn, uint64_t sender_mac, char * 
 {
   printf("Function-pointer callback got %s %zd\n", message, count);
   printf("Mac address is %luX", sender_mac);
+}
+
+
+int base64_decode(unsigned char *input, int length, helium_token_t outbuf) {
+  BIO *b64, *bmem, *decoder;
+
+  b64 = BIO_new(BIO_f_base64());
+  BIO_set_flags(b64, BIO_FLAGS_BASE64_NO_NL);
+  bmem = BIO_new_mem_buf(input, length);
+  decoder = BIO_push(b64, bmem);
+  BIO_flush(decoder);
+  int readlen = BIO_read(decoder, outbuf, length);
+  BIO_free_all(b64);
+  return readlen;
 }
 
 int main(int argc, char *argv[])
@@ -35,12 +52,18 @@ int main(int argc, char *argv[])
 
   uint64_t mac;
   helium_token_t token;
+  unsigned char token_in[32];
   char message[1024];
   int ret;
   while(1) {
-    ret = scanf("%lx %16c %[^\n]", &mac, token, message);
+    ret = scanf("%lx %s %[^\n]", &mac, token_in, message);
     if (ret > 0) {
-      printf("MAC %lu %s %s\n", mac, token, message);
+      base64_decode(token_in, strlen((char*)token_in), token);
+      printf("MAC %lu %s %s\n", mac, token_in, message);
+      for (int i = 0; i < 16; i++) {
+        printf("%u ", token[i]);
+      }
+      printf("\n");
       int  err = helium_send(&conn, mac, token, (unsigned char*)message, strlen(message));
       helium_dbg("send result %d\n", err);
     } else {
