@@ -98,8 +98,8 @@ struct helium_send_req_s {
 
 void _helium_buffer_alloc_callback(uv_handle_t *handle, size_t suggested, uv_buf_t *dst)
 {
-  helium_dbg("in allocate, allocating %zd bytes", suggested);
   char *chunk = malloc(suggested);
+  helium_dbg("in allocate, allocating %zd bytes into pointer %p", suggested, chunk);
   assert(chunk != NULL);
   memset(chunk, 0, suggested);
   *dst = uv_buf_init(chunk, suggested);
@@ -110,6 +110,8 @@ void _helium_udp_recv_callback(uv_udp_t *handle, ssize_t nread, const uv_buf_t *
   if (nread == 0) {
     return;
   }
+
+  helium_dbg("in recv callback, buf chunk is %p", buf->base);
   uint64_t macaddr = 0;
   assert(handle->data != NULL);
   helium_connection_t *conn = (helium_connection_t *)handle->data;
@@ -128,7 +130,7 @@ void _helium_udp_recv_callback(uv_udp_t *handle, ssize_t nread, const uv_buf_t *
     nread -= 8;
   }
 
-  unsigned char *out;
+  unsigned char *out = NULL;
   struct helium_mac_token_map *entry = NULL;
   HASH_FIND(hh, conn->token_map, &macaddr, sizeof(macaddr), entry);
 
@@ -140,8 +142,10 @@ void _helium_udp_recv_callback(uv_udp_t *handle, ssize_t nread, const uv_buf_t *
   int res = libhelium_decrypt_packet(entry->token, (unsigned char*)message, nread, &out);
   if (res < 1) {
     helium_dbg("decryption failed %d\n", res);
+    free(out);
     return;
   }
+  
   helium_dbg("decryption result %d\n", res);
   helium_dbg("packet %s\n", out);
 
@@ -149,6 +153,9 @@ void _helium_udp_recv_callback(uv_udp_t *handle, ssize_t nread, const uv_buf_t *
 
   // should we ever call this when nread < 1?
   conn->callback(conn, macaddr, (char*)out, res);
+  free(out);
+  free(buf->base);
+  
 }
 
 #if HAVE_BLOCKS
@@ -202,7 +209,7 @@ void _helium_do_udp_send(uv_async_t *handle)
   uv_buf_t buf = { req->message, req->count };
   uv_udp_send_t *send_req = malloc(sizeof(uv_udp_send_t));
   send_req->data = conn;
-  err = uv_udp_send(send_req, &conn->udp_handle, &buf, 1, address->ai_addr, _helium_send_callback);
+  uv_udp_send(send_req, &conn->udp_handle, &buf, 1, address->ai_addr, _helium_send_callback);
 }
 
 void _bootup(void *arg)
