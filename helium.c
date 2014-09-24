@@ -57,6 +57,7 @@ int libhelium_encrypt_packet(const unsigned char *token, const unsigned char *me
 int libhelium_decrypt_packet(const unsigned char *token, const unsigned char *packet, int packetlen, unsigned char **dst) {
   EVP_CIPHER_CTX *ctx;
   int outlen;
+  int finallen;
   unsigned char iv[12];
   unsigned char tag[16];
   int ret;
@@ -78,9 +79,13 @@ int libhelium_decrypt_packet(const unsigned char *token, const unsigned char *pa
 
   EVP_DecryptUpdate(ctx, *dst, &outlen, packet, packetlen);
   EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_SET_TAG, sizeof(tag), tag);
-  ret = EVP_DecryptFinal_ex(ctx, *dst, &outlen);
+  ret = EVP_DecryptFinal_ex(ctx, *dst, &finallen);
   EVP_CIPHER_CTX_free(ctx);
-  return ret;
+  if (ret != 1) {
+    return 0;
+  }
+  (*dst)[outlen] = '\0';
+  return outlen;
 }
 
 struct helium_send_req_s {
@@ -108,6 +113,7 @@ void _helium_udp_recv_callback(uv_udp_t *handle, ssize_t nread, const uv_buf_t *
   uint64_t macaddr = 0;
   assert(handle->data != NULL);
   helium_connection_t *conn = (helium_connection_t *)handle->data;
+  char *message = buf->base;
 
   if (conn->proxy_addr == NULL) {
     // extract from ipv6 peer address
@@ -118,12 +124,25 @@ void _helium_udp_recv_callback(uv_udp_t *handle, ssize_t nread, const uv_buf_t *
   } else {
     // the first 8 bytes are the MAC, little endian
     memcpy((void*)&macaddr, buf->base, 8);
+    message += 8;
+    nread -= 8;
   }
+
+  unsigned char *out;
+  // TODO pull the token from a hashtable!
+  helium_token_t token = {168,155,18,12,76,23,165,106,193,7,158,28,249,107,209,231};
+  int res = libhelium_decrypt_packet(token, (unsigned char*)message, nread, &out);
+  if (res < 1) {
+    helium_dbg("decryption failed %d\n", res);
+    return;
+  }
+  helium_dbg("decryption result %d\n", res);
+  helium_dbg("packet %s\n", out);
 
   helium_dbg("MAC is %lu\n", macaddr);
 
   // should we ever call this when nread < 1?
-  conn->callback(conn, macaddr, buf->base, nread);
+  conn->callback(conn, macaddr, (char*)out, res);
 }
 
 #if HAVE_BLOCKS
