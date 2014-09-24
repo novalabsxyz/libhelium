@@ -11,7 +11,7 @@
 void test_callback(const helium_connection_t *conn, uint64_t sender_mac, char * const message, size_t count)
 {
   printf("Function-pointer callback got %s %zd\n", message, count);
-  printf("Mac address is %luX", sender_mac);
+  printf("Mac address is %lu\n", sender_mac);
 }
 
 

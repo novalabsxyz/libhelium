@@ -208,7 +208,7 @@ void _bootup(void *arg)
 int helium_init(helium_connection_t *conn, char *proxy_addr, helium_callback_t callback)
 {
   // should we parameterize this function so as to allow a passed loop?
-  conn->loop = uv_default_loop();
+  conn->loop = uv_loop_new();
   uv_async_init(conn->loop, &conn->async, _helium_do_udp_send);
   int err = uv_udp_init(conn->loop, &conn->udp_handle);
 
@@ -220,11 +220,11 @@ int helium_init(helium_connection_t *conn, char *proxy_addr, helium_callback_t c
   struct sockaddr_in6 v6addr;
   if (proxy_addr != NULL) {
     helium_dbg("binding ipv4");
-    err = uv_ip4_addr("0.0.0.0", 40026, &v4addr);
+    err = uv_ip4_addr("0.0.0.0", 0, &v4addr);
   }
   else {
     helium_dbg("binding ipv6");
-    err = uv_ip6_addr("::", 40026, &v6addr);
+    err = uv_ip6_addr("::", 0, &v6addr);
   }
 
   const struct sockaddr *addr = proxy_addr != NULL ? (struct sockaddr*)&v4addr : (struct sockaddr*)&v6addr;
