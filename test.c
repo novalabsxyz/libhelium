@@ -69,10 +69,15 @@ int main(int argc, char *argv[])
     } else {
       // invalid line, consume it
       fgets(message, 1024, stdin);
+      if (strncmp(message, "QUIT", 4) == 0) {
+        printf("quitting");
+        break;
+      }
+      
       printf("USAGE: <MAC> <Token> <Message>\n");
     }
   }
 
-  free(conn);
+  helium_free(conn);
   return 0;
 }

@@ -218,6 +218,14 @@ helium_connection_t *helium_alloc(void)
 
 void helium_free(helium_connection_t *conn)
 {
+  struct helium_mac_token_map *iter = NULL;
+  struct helium_mac_token_map *tmp = NULL;
+
+  HASH_ITER(hh, conn->token_map, iter, tmp) {
+    HASH_DEL(conn->token_map, iter);
+    free(iter);
+  }
+  
   free(conn);
 }
 
@@ -288,8 +296,10 @@ int helium_send(helium_connection_t *conn, uint64_t macaddr, helium_token_t toke
   struct helium_mac_token_map *entry = malloc(sizeof(struct helium_mac_token_map));
   entry->mac = macaddr;
   memcpy(entry->token, token, sizeof(helium_token_t));
-  
-  HASH_ADD(hh, conn->token_map, mac, sizeof(uint64_t), entry);
+
+  struct helium_mac_token_map *old = NULL;
+  HASH_REPLACE(hh, conn->token_map, mac, sizeof(uint64_t), entry, old);
+  free(old); // no-op if old == NULL, otherwise frees the old entry
 
   struct helium_send_req_s *req = malloc(sizeof(struct helium_send_req_s));
 
