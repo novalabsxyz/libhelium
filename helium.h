@@ -15,6 +15,7 @@ const char *libhelium_version();
 typedef unsigned char helium_token_t[16];
 
 struct helium_connection_s;
+struct helium_mac_token_map;
 
 typedef struct helium_connection_s helium_connection_t;
 
@@ -32,8 +33,8 @@ struct helium_connection_s {
   uv_udp_t udp_handle;
   struct addrinfo connection_address;
   char *proxy_addr;
-  // should this be a hashtable of mac addresses => callbacks? probably
   helium_callback_t callback;
+  struct helium_mac_token_map *token_map;
 #if HAVE_BLOCKS
   helium_block_t callback_block;
 #endif

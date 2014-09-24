@@ -11,11 +11,18 @@
 
 #include "helium.h"
 #include "logging.h"
+#include "uthash.h"
 
 const char *libhelium_version()
 {
   return LIBHELIUM_VERSION;
 }
+
+struct helium_mac_token_map {
+  uint64_t mac;
+  helium_token_t token;
+  UT_hash_handle hh;
+};
 
 // encrypt a message into a packet
 // this function mallocs its own output buffer into **dst
@@ -129,9 +136,15 @@ void _helium_udp_recv_callback(uv_udp_t *handle, ssize_t nread, const uv_buf_t *
   }
 
   unsigned char *out;
-  // TODO pull the token from a hashtable!
-  helium_token_t token = {168,155,18,12,76,23,165,106,193,7,158,28,249,107,209,231};
-  int res = libhelium_decrypt_packet(token, (unsigned char*)message, nread, &out);
+  struct helium_mac_token_map *entry = NULL;
+  HASH_FIND(hh, conn->token_map, &macaddr, sizeof(macaddr), entry);
+
+  if (!entry) {
+    helium_log(LOG_ERR, "couldn't find entry in mac->token map for mac addr %lx", macaddr);
+    return;
+  }
+  
+  int res = libhelium_decrypt_packet(entry->token, (unsigned char*)message, nread, &out);
   if (res < 1) {
     helium_dbg("decryption failed %d\n", res);
     return;
@@ -209,6 +222,7 @@ int helium_init(helium_connection_t *conn, char *proxy_addr, helium_callback_t c
 {
   // should we parameterize this function so as to allow a passed loop?
   conn->loop = uv_loop_new();
+  conn->token_map = NULL;
   uv_async_init(conn->loop, &conn->async, _helium_do_udp_send);
   int err = uv_udp_init(conn->loop, &conn->udp_handle);
 
@@ -262,13 +276,19 @@ int helium_init_b(helium_connection_t *conn, char *proxy_addr, helium_block_t bl
 
 int helium_send(helium_connection_t *conn, uint64_t macaddr, helium_token_t token, unsigned char *message, size_t count)
 {
-  struct helium_send_req_s *req = malloc(sizeof(struct helium_send_req_s));
-
   unsigned char *packet;
   count = libhelium_encrypt_packet(token, message, &packet);
   if (count < 1) {
     return -1;
   }
+
+  struct helium_mac_token_map *entry = malloc(sizeof(struct helium_mac_token_map));
+  entry->mac = macaddr;
+  memcpy(entry->token, token, sizeof(helium_token_t));
+  
+  HASH_ADD(hh, conn->token_map, mac, sizeof(uint64_t), entry);
+
+  struct helium_send_req_s *req = malloc(sizeof(struct helium_send_req_s));
 
   req->macaddr = macaddr;
   memcpy(req->token, token, 16);
