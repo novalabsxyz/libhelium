@@ -14,32 +14,15 @@ const char *libhelium_version();
 // NUL-terminated.
 typedef unsigned char helium_token_t[16];
 
-struct helium_connection_s;
-struct helium_mac_token_map;
-
 typedef struct helium_connection_s helium_connection_t;
 
-// Would like a block-based API but for now let's just do function pointers.
 #if HAVE_BLOCKS
 typedef void (^helium_block_t)(const helium_connection_t *conn, uint64_t sender_mac, char * const message, size_t count);
 #endif
 
 typedef void (*helium_callback_t)(const helium_connection_t *conn, uint64_t sender_mac, char * const message, size_t count);
 
-struct helium_connection_s {
-  uv_loop_t *loop;
-  uv_thread_t thread;
-  uv_async_t async;
-  uv_udp_t udp_handle;
-  struct addrinfo connection_address;
-  char *proxy_addr;
-  helium_callback_t callback;
-  struct helium_mac_token_map *token_map;
-#if HAVE_BLOCKS
-  helium_block_t callback_block;
-#endif
-};
-
+helium_connection_t *helium_alloc(void) __attribute__((malloc));
 int helium_init(helium_connection_t *conn, char *proxy_addr, helium_callback_t callback);
 
 #if HAVE_BLOCKS
@@ -48,5 +31,6 @@ int helium_init_b(helium_connection_t *conn, char *proxy_addr, helium_block_t ca
 
 int helium_close(helium_connection_t *conn);
 int helium_send(helium_connection_t *conn, uint64_t macaddr, helium_token_t token, unsigned char *message, size_t count);
+void helium_free(helium_connection_t *conn); 
 
 #endif /* HELIUM_API_H */

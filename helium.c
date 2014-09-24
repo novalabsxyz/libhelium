@@ -9,20 +9,13 @@
 #include <openssl/evp.h>
 #include <openssl/sha.h>
 
-#include "helium.h"
+#include "helium_internal.h"
 #include "logging.h"
-#include "uthash.h"
 
 const char *libhelium_version()
 {
   return LIBHELIUM_VERSION;
 }
-
-struct helium_mac_token_map {
-  uint64_t mac;
-  helium_token_t token;
-  UT_hash_handle hh;
-};
 
 // encrypt a message into a packet
 // this function mallocs its own output buffer into **dst
@@ -216,6 +209,16 @@ void _bootup(void *arg)
 {
   helium_connection_t *conn = (helium_connection_t *)arg;
   uv_run(conn->loop, UV_RUN_DEFAULT);
+}
+
+helium_connection_t *helium_alloc(void)
+{
+  return calloc(sizeof(helium_connection_t), 1);
+}
+
+void helium_free(helium_connection_t *conn)
+{
+  free(conn);
 }
 
 int helium_init(helium_connection_t *conn, char *proxy_addr, helium_callback_t callback)

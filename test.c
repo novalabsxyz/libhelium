@@ -33,7 +33,7 @@ int main(int argc, char *argv[])
   helium_logging_start();
   char *proxy = NULL;
   //helium_token_t token = "abcdefghijklmnop";
-  helium_connection_t conn;
+  helium_connection_t *conn = helium_alloc();
   if (argc == 3 && strcmp("-p", argv[1]) == 0) {
     printf("proxy %s\n", argv[2]);
     proxy = argv[2];
@@ -43,11 +43,11 @@ int main(int argc, char *argv[])
   }
 
 #if HAVE_BLOCKS
-  helium_init_b(&conn, proxy, ^(const helium_connection_t *conn, uint64_t mac, char *msg, size_t n) {
+  helium_init_b(conn, proxy, ^(const helium_connection_t *conn, uint64_t mac, char *msg, size_t n) {
       helium_dbg("Block callback got %zu bytes from message %s", n, msg);
   });
 #else
-  helium_init(&conn, proxy, test_callback);
+  helium_init(conn, proxy, test_callback);
 #endif
 
   uint64_t mac;
@@ -64,7 +64,7 @@ int main(int argc, char *argv[])
         printf("%u ", token[i]);
       }
       printf("\n");
-      int  err = helium_send(&conn, mac, token, (unsigned char*)message, strlen(message));
+      int  err = helium_send(conn, mac, token, (unsigned char*)message, strlen(message));
       helium_dbg("send result %d\n", err);
     } else {
       // invalid line, consume it
@@ -72,5 +72,7 @@ int main(int argc, char *argv[])
       printf("USAGE: <MAC> <Token> <Message>\n");
     }
   }
+
+  free(conn);
   return 0;
 }
