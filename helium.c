@@ -106,47 +106,21 @@ void _helium_udp_recv_callback(uv_udp_t *handle, ssize_t nread, const uv_buf_t *
     return;
   }
   uint64_t macaddr = 0;
-  const size_t BUFLEN = 256;
-
-  char host[BUFLEN];
-  char serv[BUFLEN];
-
   assert(handle->data != NULL);
   helium_connection_t *conn = (helium_connection_t *)handle->data;
 
-  // Assumption: NULL proxy address means we're in IPv6 mode.
-  // Used to have the larger of the two sizes here; that could be safer.
-  const size_t enough
-    = conn->proxy_addr == NULL
-    ? sizeof(struct sockaddr_in6)
-    : sizeof(struct sockaddr);
-
-  int err = getnameinfo(addr, enough, host, BUFLEN, serv, BUFLEN, 0);
-
-
-  if (err != 0) {
-    const char *err = gai_strerror(errno);
-    helium_log(LOG_ERR, "Error in Helium callback: getnameinfo failed, reason: %s", err);
-    return;
-  }
-
-  if (strncmp(host, "localhost", BUFLEN) == 0) {
-    // testing
-    helium_dbg("from localhost, just testing");
-    strcpy(host, "deadbeef.d.helium.co");
-  }
-
-  helium_dbg("Received host is %s\n", host);
-
-  unsigned int whatever = 0;
-  err = sscanf(host, "%x.d.helium.co", &whatever);
-  macaddr = whatever;
-  
-  if (err == 0) {
-    helium_log(LOG_WARNING, "Couldn't extract mac address from host %s\n", host);
+  if (conn->proxy_addr == NULL) {
+    // extract from ipv6 peer address
+    struct sockaddr_in6 *in6addr = (struct sockaddr_in6*)addr;
+    memcpy((void*)&macaddr, in6addr->sin6_addr.s6_addr+8, 8);
+    // XXX this is a giant non-portable hack
+    macaddr = __builtin_bswap64(macaddr);
   } else {
-    helium_dbg("Extracted MAC is %lX\n", macaddr);
+    // the first 8 bytes are the MAC, little endian
+    memcpy((void*)&macaddr, buf->base, 8);
   }
+
+  helium_dbg("MAC is %lu\n", macaddr);
 
   // should we ever call this when nread < 1?
   conn->callback(conn, macaddr, buf->base, nread);
