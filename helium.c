@@ -108,6 +108,7 @@ void _helium_buffer_alloc_callback(uv_handle_t *handle, size_t suggested, uv_buf
 void _helium_udp_recv_callback(uv_udp_t *handle, ssize_t nread, const uv_buf_t *buf, const struct sockaddr *addr, unsigned int flags)
 {
   if (nread == 0) {
+    free(buf->base);
     return;
   }
 
@@ -170,6 +171,7 @@ void _helium_send_callback(uv_udp_send_t *req, int status)
 
   helium_dbg("In send callback, sent %d\n", status);
   if (status == 0) {
+    free(req->data);
     free(req);
   }
 }
@@ -203,13 +205,18 @@ void _helium_do_udp_send(uv_async_t *handle)
   int err = getaddrinfo(target, "2169", &hints, &address);
 
   if (err != 0) {
-    return;
+    goto done;
   }
 
   uv_buf_t buf = { req->message, req->count };
   uv_udp_send_t *send_req = malloc(sizeof(uv_udp_send_t));
-  send_req->data = conn;
+  send_req->data = req->message;
   uv_udp_send(send_req, &conn->udp_handle, &buf, 1, address->ai_addr, _helium_send_callback);
+  freeaddrinfo(address);
+done:
+  if (conn->proxy_addr == NULL) {
+    free(target);
+  }
 }
 
 void _bootup(void *arg)
@@ -312,8 +319,7 @@ int helium_send(helium_connection_t *conn, uint64_t macaddr, helium_token_t toke
 
   req->macaddr = macaddr;
   memcpy(req->token, token, 16);
-  req->message = malloc(count);
-  memcpy(req->message, packet, count);
+  req->message = (char*)packet;
   req->count = count;
   req->conn = conn;
   conn->async.data = (void*)req;
