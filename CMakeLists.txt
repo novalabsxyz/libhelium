@@ -13,6 +13,8 @@ add_definitions(-D_GNU_SOURCE) # you need this or libuv will not be happy
 
 link_directories(/usr/local/lib)
 add_library(helium STATIC logging.c helium.c)
+# fPIC is needed to link a static lib to a shared object
+set_target_properties(helium PROPERTIES COMPILE_FLAGS "-fPIC")
 
 add_executable(helium_test test.c)
 target_link_libraries(helium_test helium.a)
@@ -33,3 +35,5 @@ else()
 endif(CMAKE_C_COMPILER_ID MATCHES "clang")
 
 install(TARGETS helium DESTINATION lib)
+
+install(FILES helium.h DESTINATION include)
