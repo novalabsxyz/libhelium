@@ -40,7 +40,8 @@ int helium_send(helium_connection_t *conn, uint64_t macaddr, helium_token_t toke
 void *helium_get_context(const helium_connection_t *conn);
 void helium_set_context(helium_connection_t *conn, void *context);
 
-
+// convenience method for base64 decoding
+int helium_base64_token_decode(const unsigned char *input, int length, helium_token_t outbuf);
 
 
 #endif /* HELIUM_API_H */

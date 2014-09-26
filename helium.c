@@ -182,6 +182,7 @@ void _helium_do_udp_send(uv_async_t *handle)
   helium_connection_t *conn = req->conn;
   char *target = NULL;
   struct addrinfo hints = {AF_UNSPEC, SOCK_DGRAM, 0, 0};
+
   if (conn->proxy_addr == NULL) {
     asprintf(&target, "%lX.d.helium.io", req->macaddr);
     helium_dbg("looking up %s", target);
@@ -353,3 +354,16 @@ int helium_close(helium_connection_t *conn)
   return 0;
 }
 
+int helium_base64_token_decode(const unsigned char *input, int length, helium_token_t token_out)
+{
+  BIO *b64, *bmem, *decoder;
+
+  b64 = BIO_new(BIO_f_base64());
+  BIO_set_flags(b64, BIO_FLAGS_BASE64_NO_NL);
+  bmem = BIO_new_mem_buf((void *)input, length);
+  decoder = BIO_push(b64, bmem);
+  BIO_flush(decoder);
+  int readlen = BIO_read(decoder, token_out, length);
+  BIO_free_all(b64);
+  return readlen;
+}

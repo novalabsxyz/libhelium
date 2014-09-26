@@ -14,20 +14,6 @@ void test_callback(const helium_connection_t *conn, uint64_t sender_mac, char * 
   helium_dbg("Mac address is %lu\n", sender_mac);
 }
 
-
-int base64_decode(unsigned char *input, int length, helium_token_t outbuf) {
-  BIO *b64, *bmem, *decoder;
-
-  b64 = BIO_new(BIO_f_base64());
-  BIO_set_flags(b64, BIO_FLAGS_BASE64_NO_NL);
-  bmem = BIO_new_mem_buf(input, length);
-  decoder = BIO_push(b64, bmem);
-  BIO_flush(decoder);
-  int readlen = BIO_read(decoder, outbuf, length);
-  BIO_free_all(b64);
-  return readlen;
-}
-
 int main(int argc, char *argv[])
 {
   helium_logging_start();
@@ -58,7 +44,7 @@ int main(int argc, char *argv[])
   while(1) {
     ret = scanf("%lx %s %[^\n]", &mac, token_in, message);
     if (ret > 0) {
-      base64_decode(token_in, strlen((char*)token_in), token);
+      helium_base64_token_decode(token_in, strlen((char*)token_in), token);
       printf("MAC %lu %s %s\n", mac, token_in, message);
       for (int i = 0; i < 16; i++) {
         printf("%u ", token[i]);
