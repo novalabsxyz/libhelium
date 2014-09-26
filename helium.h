@@ -34,6 +34,7 @@ int helium_close(helium_connection_t *conn);
 int helium_open_b(helium_connection_t *conn, char *proxy_addr, helium_block_t callback);
 #endif
 
+int helium_subscribe(helium_connection_t *conn, uint64_t macaddr, helium_token_t token);
 int helium_send(helium_connection_t *conn, uint64_t macaddr, helium_token_t token, unsigned char *message, size_t count);
 
 void *helium_get_context(const helium_connection_t *conn);

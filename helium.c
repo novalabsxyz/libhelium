@@ -284,9 +284,16 @@ int helium_open(helium_connection_t *conn, char *proxy_addr, helium_callback_t c
   }
 
   // kick off the thread
- uv_thread_create(&conn->thread, _bootup, conn);
+  uv_thread_create(&conn->thread, _bootup, conn);
  
   return 0;
+}
+
+int helium_subscribe(helium_connection_t *conn, uint64_t macaddr, helium_token_t token)
+{
+  // TODO: stop faking this
+  unsigned char *msg = (unsigned char *)"s";
+  return helium_send(conn, macaddr, token, msg, 1);
 }
 
 void *helium_get_context(const helium_connection_t * conn)
