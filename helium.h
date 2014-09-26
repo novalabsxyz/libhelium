@@ -9,6 +9,8 @@
 
 const char *libhelium_version();
 
+void helium_logging_start(); // debug
+
 // I think char[16] is preferable to char* here because there
 // may be embedded NULs therein, and people think of char* as
 // NUL-terminated.
@@ -28,6 +30,9 @@ int helium_init(helium_connection_t *conn, char *proxy_addr, helium_callback_t c
 #if HAVE_BLOCKS
 int helium_init_b(helium_connection_t *conn, char *proxy_addr, helium_block_t callback);
 #endif
+
+void *helium_get_user_context(const helium_connection_t *conn);
+void helium_set_user_context(helium_connection_t *conn, void *context);
 
 int helium_close(helium_connection_t *conn);
 int helium_send(helium_connection_t *conn, uint64_t macaddr, helium_token_t token, unsigned char *message, size_t count);

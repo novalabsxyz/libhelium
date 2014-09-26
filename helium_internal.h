@@ -13,6 +13,7 @@ struct helium_connection_s {
   struct addrinfo connection_address;
   char *proxy_addr;
   helium_callback_t callback;
+  void *context;
   struct helium_mac_token_map *token_map;
 #if HAVE_BLOCKS
   helium_block_t callback_block;
