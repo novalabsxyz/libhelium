@@ -243,7 +243,7 @@ void helium_free(helium_connection_t *conn)
   free(conn);
 }
 
-int helium_init(helium_connection_t *conn, char *proxy_addr, helium_callback_t callback)
+int helium_open(helium_connection_t *conn, char *proxy_addr, helium_callback_t callback)
 {
   // should we parameterize this function so as to allow a passed loop?
   conn->loop = uv_loop_new();
@@ -289,19 +289,19 @@ int helium_init(helium_connection_t *conn, char *proxy_addr, helium_callback_t c
   return 0;
 }
 
-void *helium_get_user_context(const helium_connection_t * conn)
+void *helium_get_context(const helium_connection_t * conn)
 {
   return conn->context;
 }
 
-void helium_set_user_context(helium_connection_t *conn, void *newcontext)
+void helium_set_context(helium_connection_t *conn, void *newcontext)
 {
   conn->context = newcontext;
 }
 
 #if HAVE_BLOCKS
 
-int helium_init_b(helium_connection_t *conn, char *proxy_addr, helium_block_t block)
+int helium_open_b(helium_connection_t *conn, char *proxy_addr, helium_block_t block)
 {
   conn->callback_block = block; // Block_copy(block) here??
   return helium_init(conn, proxy_addr, _helium_block_callback);

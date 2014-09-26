@@ -43,11 +43,11 @@ int main(int argc, char *argv[])
   }
 
 #if HAVE_BLOCKS
-  helium_init_b(conn, proxy, ^(const helium_connection_t *conn, uint64_t mac, char *msg, size_t n) {
+  helium_open_b(conn, proxy, ^(const helium_connection_t *conn, uint64_t mac, char *msg, size_t n) {
       helium_dbg("Block callback got %zu bytes from message %s", n, msg);
   });
 #else
-  helium_init(conn, proxy, test_callback);
+  helium_open(conn, proxy, test_callback);
 #endif
 
   uint64_t mac;
