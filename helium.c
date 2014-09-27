@@ -28,10 +28,10 @@ int libhelium_encrypt_packet(const unsigned char *token, const unsigned char *me
   unsigned char iv[12];
   // not doing a memset here may generate some uninitalized byte warnings in valgrind, but
   // since openssl mixes the random contents of the buffer into the entropy pool, it is probably ok?
-  memset(iv, 0, 12);
-  //if ((RAND_bytes(iv, 12)) != 1) {
-  //  return -1;
-  //}
+  //memset(iv, 0, 12);
+  if ((RAND_bytes(iv, 12)) != 1) {
+    return -1;
+  }
   size_t len = 1+ strlen((char*)message) + 12 + 16 + SHA256_DIGEST_LENGTH;
   *dst = malloc(len);
   tmpdst = *dst;
