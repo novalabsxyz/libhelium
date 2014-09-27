@@ -219,10 +219,11 @@ void _helium_refresh_subscriptions(uv_timer_t *handle) {
   helium_dbg("subscription refresh timer fired\n");
   struct helium_mac_token_map *s;
   size_t count;
-  unsigned char *packet;
+  unsigned char *packet = NULL;
   struct addrinfo *address = NULL;
   int err;
   for(s=conn->subscription_map; s != NULL; s=s->hh.next) {
+    packet=NULL;
     count = libhelium_encrypt_packet(s->token, (unsigned char*)"", 's', &packet);
     if (count < 1) {
       helium_dbg("failed to encrypt re-subscription packet for %lu\n", s->mac);
@@ -271,7 +272,7 @@ void _helium_do_subscribe(uv_async_t *handle) {
   free(old); // no-op if old == NULL, otherwise frees the old entry
 
   size_t count;
-  unsigned char *packet;
+  unsigned char *packet = NULL;
   struct addrinfo *address = NULL;
   int err;
   count = libhelium_encrypt_packet(req->token, (unsigned char*)"", 's', &packet);
@@ -354,6 +355,8 @@ void helium_free(helium_connection_t *conn)
     HASH_DEL(conn->token_map, iter);
     free(iter);
   }
+  iter = NULL;
+  tmp = NULL;
 
   HASH_ITER(hh, conn->subscription_map, iter, tmp) {
     HASH_DEL(conn->subscription_map, iter);
@@ -455,7 +458,7 @@ int helium_open_b(helium_connection_t *conn, char *proxy_addr, helium_block_t bl
 
 int helium_send(helium_connection_t *conn, uint64_t macaddr, helium_token_t token, unsigned char *message, size_t count)
 {
-  unsigned char *packet;
+  unsigned char *packet = NULL;
   count = libhelium_encrypt_packet(token, message, 'd', &packet);
   if (count < 1) {
     return -1;
