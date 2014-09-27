@@ -6,10 +6,11 @@
 #include "uthash.h"
 
 struct helium_connection_s {
-  uv_loop_t *loop;
+  uv_loop_t loop;
   uv_thread_t thread;
   uv_async_t send_async;
   uv_async_t subscribe_async;
+  uv_async_t quit_async;
   uv_udp_t udp_handle;
   uv_timer_t subscription_timer;
   struct addrinfo connection_address;

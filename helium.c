@@ -26,11 +26,14 @@ int libhelium_encrypt_packet(const unsigned char *token, const unsigned char *me
   int tmplen = 0;
   unsigned char *tmpdst;
   unsigned char iv[12];
-  if ((RAND_bytes((unsigned char*)&iv, 12)) != 1) {
+  // not doing a memset here may generate some uninitalized byte warnings in valgrind, but
+  // since openssl mixes the random contents of the buffer into the entropy pool, it is probably ok?
+  //memset(iv, 0, 12);
+  if ((RAND_bytes(iv, 12)) != 1) {
     return -1;
   }
-
-  *dst = malloc(strlen((char*)message) + 12 + 16 + SHA256_DIGEST_LENGTH);
+  size_t len = strlen((char*)message) + 12 + 16 + SHA256_DIGEST_LENGTH;
+  *dst = malloc(len);
   tmpdst = *dst;
 
   SHA256_Init(&sha256);
@@ -237,6 +240,21 @@ void _helium_refresh_subscriptions(uv_timer_t *handle) {
   }
 }
 
+void _helium_do_quit(uv_async_t *handle) {
+  helium_connection_t *conn = handle->data;
+  // stop UDP and the resubscription timer
+  uv_udp_recv_stop(&conn->udp_handle);
+  uv_timer_stop(&conn->subscription_timer);
+  // unref all the handles
+  uv_unref((uv_handle_t*)&conn->udp_handle);
+  uv_unref((uv_handle_t*)&conn->subscription_timer);
+  uv_unref((uv_handle_t*)&conn->send_async);
+  uv_unref((uv_handle_t*)&conn->subscribe_async);
+  uv_unref((uv_handle_t*)&conn->quit_async);
+  // we don't need to uv_stop() here, the event loop exits normally
+  /*uv_stop(&conn->loop);*/
+}
+
 void _helium_do_subscribe(uv_async_t *handle) {
   struct helium_subscribe_req_s *req = (struct helium_subscribe_req_s*)handle->data;
   helium_connection_t *conn = req->conn;
@@ -294,7 +312,7 @@ done:
 void _bootup(void *arg)
 {
   helium_connection_t *conn = (helium_connection_t *)arg;
-  uv_run(conn->loop, UV_RUN_DEFAULT);
+  uv_run(&conn->loop, UV_RUN_DEFAULT);
 }
 
 helium_connection_t *helium_alloc(void)
@@ -311,22 +329,34 @@ void helium_free(helium_connection_t *conn)
     HASH_DEL(conn->token_map, iter);
     free(iter);
   }
-  
+
+  HASH_ITER(hh, conn->subscription_map, iter, tmp) {
+    HASH_DEL(conn->subscription_map, iter);
+    free(iter);
+  }
+
+  int err = uv_loop_close(&conn->loop);
+  if (err) {
+    // unclear why loop_close returns EBUSY, might be a libuv bug?
+    printf("ERROR loop close was non-zero: %d\n", err);
+  }
+
   free(conn);
 }
 
 int helium_open(helium_connection_t *conn, char *proxy_addr, helium_callback_t callback)
 {
   // should we parameterize this function so as to allow a passed loop?
-  conn->loop = uv_loop_new();
+  uv_loop_init(&conn->loop);
   conn->token_map = NULL;
   conn->subscription_map = NULL;
-  uv_async_init(conn->loop, &conn->send_async, _helium_do_udp_send);
-  uv_async_init(conn->loop, &conn->subscribe_async, _helium_do_subscribe);
-  uv_timer_init(conn->loop, &conn->subscription_timer);
+  uv_async_init(&conn->loop, &conn->send_async, _helium_do_udp_send);
+  uv_async_init(&conn->loop, &conn->subscribe_async, _helium_do_subscribe);
+  uv_async_init(&conn->loop, &conn->quit_async, _helium_do_quit);
+  uv_timer_init(&conn->loop, &conn->subscription_timer);
   conn->subscription_timer.data = conn;
   uv_timer_start(&conn->subscription_timer, _helium_refresh_subscriptions, 30000, 30000);
-  int err = uv_udp_init(conn->loop, &conn->udp_handle);
+  int err = uv_udp_init(&conn->loop, &conn->udp_handle);
 
   if (err) {
     return err;
@@ -425,7 +455,9 @@ int helium_send(helium_connection_t *conn, uint64_t macaddr, helium_token_t toke
 
 int helium_close(helium_connection_t *conn)
 {
-  uv_udp_recv_stop(&conn->udp_handle);
+  conn->quit_async.data = conn;
+  uv_async_send(&conn->quit_async);
+  uv_thread_join(&conn->thread);
 
   return 0;
 }
