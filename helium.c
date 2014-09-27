@@ -174,8 +174,11 @@ void _helium_udp_recv_callback(uv_udp_t *handle, ssize_t nread, const uv_buf_t *
   HASH_FIND(hh, conn->token_map, &macaddr, sizeof(macaddr), entry);
 
   if (!entry) {
-    helium_log(LOG_ERR, "couldn't find entry in mac->token map for mac addr %lx", macaddr);
-    return;
+    HASH_FIND(hh, conn->subscription_map, &macaddr, sizeof(macaddr), entry);
+    if (!entry) {
+      helium_log(LOG_ERR, "couldn't find entry in mac->token map for mac addr %lx", macaddr);
+      return;
+    }
   }
   
   int res = libhelium_decrypt_packet(entry->token, (unsigned char*)message, nread, &out);
