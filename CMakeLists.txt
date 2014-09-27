@@ -17,7 +17,12 @@ add_library(helium STATIC logging.c helium.c)
 set_target_properties(helium PROPERTIES COMPILE_FLAGS "-fPIC")
 
 add_executable(helium_test test.c)
-target_link_libraries(helium_test helium.a)
+add_dependencies(helium_test helium)
+# force helium_test to rebuild if libhelium changes
+SET_SOURCE_FILES_PROPERTIES(
+  test.c PROPERTIES OBJECT_DEPENDS
+  ${CMAKE_CURRENT_BINARY_DIR}/libhelium.a
+  )
 set_target_properties(helium_test PROPERTIES LINK_FLAGS "-L. -lcrypto")
 
 if(CMAKE_C_COMPILER_ID MATCHES "clang")
