@@ -19,7 +19,7 @@ const char *libhelium_version()
 
 // encrypt a message into a packet
 // this function mallocs its own output buffer into **dst
-int libhelium_encrypt_packet(const unsigned char *token, const unsigned char *message, unsigned char **dst) {
+int libhelium_encrypt_packet(const unsigned char *token, const unsigned char *message, char prefix, unsigned char **dst) {
   EVP_CIPHER_CTX *ctx;
   SHA256_CTX sha256;
   int outlen = 0;
@@ -28,11 +28,11 @@ int libhelium_encrypt_packet(const unsigned char *token, const unsigned char *me
   unsigned char iv[12];
   // not doing a memset here may generate some uninitalized byte warnings in valgrind, but
   // since openssl mixes the random contents of the buffer into the entropy pool, it is probably ok?
-  //memset(iv, 0, 12);
-  if ((RAND_bytes(iv, 12)) != 1) {
-    return -1;
-  }
-  size_t len = strlen((char*)message) + 12 + 16 + SHA256_DIGEST_LENGTH;
+  memset(iv, 0, 12);
+  //if ((RAND_bytes(iv, 12)) != 1) {
+  //  return -1;
+  //}
+  size_t len = 1+ strlen((char*)message) + 12 + 16 + SHA256_DIGEST_LENGTH;
   *dst = malloc(len);
   tmpdst = *dst;
 
@@ -48,11 +48,13 @@ int libhelium_encrypt_packet(const unsigned char *token, const unsigned char *me
   EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_SET_IVLEN, sizeof(iv), NULL);
   EVP_EncryptInit_ex(ctx, NULL, NULL, token, iv);
   // no AAD
+  EVP_EncryptUpdate(ctx, tmpdst, &outlen, (unsigned char*)&prefix, 1);
+  tmpdst++;
   EVP_EncryptUpdate(ctx, tmpdst, &outlen, message, strlen((char*)message));
   EVP_EncryptFinal_ex(ctx, tmpdst, &tmplen);
   EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_GET_TAG, 16, tmpdst+outlen);
   EVP_CIPHER_CTX_free(ctx);
-  return outlen+16+SHA256_DIGEST_LENGTH+12;
+  return outlen+1+16+SHA256_DIGEST_LENGTH+12;
 }
 
 // decrypt a message from a packet
@@ -221,7 +223,7 @@ void _helium_refresh_subscriptions(uv_timer_t *handle) {
   struct addrinfo *address = NULL;
   int err;
   for(s=conn->subscription_map; s != NULL; s=s->hh.next) {
-    count = libhelium_encrypt_packet(s->token, (unsigned char*)"s", &packet);
+    count = libhelium_encrypt_packet(s->token, (unsigned char*)"", 's', &packet);
     if (count < 1) {
       helium_dbg("failed to encrypt re-subscription packet for %lu\n", s->mac);
       continue;
@@ -267,6 +269,29 @@ void _helium_do_subscribe(uv_async_t *handle) {
   struct helium_mac_token_map *old = NULL;
   HASH_REPLACE(hh, conn->subscription_map, mac, sizeof(uint64_t), entry, old);
   free(old); // no-op if old == NULL, otherwise frees the old entry
+
+  size_t count;
+  unsigned char *packet;
+  struct addrinfo *address = NULL;
+  int err;
+  count = libhelium_encrypt_packet(req->token, (unsigned char*)"", 's', &packet);
+  if (count < 1) {
+    helium_dbg("failed to encrypt ubscription packet for %lu\n", req->macaddr);
+    free(req);
+    return;
+  }
+  err = _helium_getdeviceaddr(req->macaddr, conn->proxy_addr, &address);
+  if (err == 0) {
+    uv_buf_t buf = { (char*)packet, count };
+    uv_udp_send_t *send_req = malloc(sizeof(uv_udp_send_t));
+    send_req->data = packet;
+    uv_udp_send(send_req, &conn->udp_handle, &buf, 1, address->ai_addr, _helium_send_callback);
+    helium_dbg("subscribed to %lu\n", req->macaddr);
+    freeaddrinfo(address);
+  } else {
+    free(packet);
+  }
+
   free(req);
 }
 
@@ -398,9 +423,6 @@ int helium_open(helium_connection_t *conn, char *proxy_addr, helium_callback_t c
 
 int helium_subscribe(helium_connection_t *conn, uint64_t macaddr, helium_token_t token)
 {
-  // TODO: stop faking this
-  unsigned char *msg = (unsigned char *)"s";
-
   struct helium_subscribe_req_s *req = malloc(sizeof(struct helium_subscribe_req_s));
   req->macaddr = macaddr;
   memcpy(req->token, token, 16);
@@ -408,7 +430,7 @@ int helium_subscribe(helium_connection_t *conn, uint64_t macaddr, helium_token_t
   req->subscribe = 1;
   conn->subscribe_async.data = req;
   uv_async_send(&conn->subscribe_async);
-  return helium_send(conn, macaddr, token, msg, 1);
+  return 0;
 }
 
 void *helium_get_context(const helium_connection_t * conn)
@@ -434,7 +456,7 @@ int helium_open_b(helium_connection_t *conn, char *proxy_addr, helium_block_t bl
 int helium_send(helium_connection_t *conn, uint64_t macaddr, helium_token_t token, unsigned char *message, size_t count)
 {
   unsigned char *packet;
-  count = libhelium_encrypt_packet(token, message, &packet);
+  count = libhelium_encrypt_packet(token, message, 'd', &packet);
   if (count < 1) {
     return -1;
   }
