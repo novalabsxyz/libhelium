@@ -45,13 +45,13 @@ int main(int argc, char *argv[])
     ret = scanf("%lx %s %[^\n]", &mac, token_in, message);
     if (ret > 0) {
       helium_base64_token_decode(token_in, strlen((char*)token_in), token);
-      printf("MAC %lu %s %s\n", mac, token_in, message);
-      for (int i = 0; i < 16; i++) {
-        printf("%u ", token[i]);
+      if (strncmp("s", message, 1) == 0) {
+        int  err = helium_subscribe(conn, mac, token);
+        helium_dbg("subscribe result %d\n", err);
+      } else {
+        int  err = helium_send(conn, mac, token, (unsigned char*)message, strlen(message));
+        helium_dbg("send result %d\n", err);
       }
-      printf("\n");
-      int  err = helium_send(conn, mac, token, (unsigned char*)message, strlen(message));
-      helium_dbg("send result %d\n", err);
     } else {
       // invalid line, consume it
       fgets(message, 1024, stdin);
@@ -59,7 +59,6 @@ int main(int argc, char *argv[])
         printf("quitting");
         break;
       }
-      
       printf("USAGE: <MAC> <Token> <Message>\n");
     }
   }
