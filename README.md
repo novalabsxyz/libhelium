@@ -3,6 +3,24 @@ libhelium
 
 low-level, cross-platform interface to Helium routers and bridges
 
+example
+=======
+
+```c
+#include <helium.h>
+
+// create a new connection
+helium_collection_t *conn = helium_alloc();
+
+// associate it with a callback (with function pointers or, if you're fancy C/C++ lambdas)
+helium_open_b(conn, ^(const helium_connection_t *conn, uint64_t mac, char *msg, size_t n) {
+    printf("Received the string '%s' from MAC address %lX", msg, mac);
+});
+
+// subscribe to events from a given MAC address
+helium_subscribe(conn, 0x0000112233440001, "magic_helium_token");
+```
+
 requirements
 ============
 
@@ -29,3 +47,8 @@ building
   cmake ..
   make
 ```
+
+testing
+=======
+
+The `helium_test` executable listens on stdin for lines of the form `<MAC> <token> <message>`. Sending the single character `'s'` tests the subscription features.
