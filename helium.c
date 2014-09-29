@@ -120,7 +120,7 @@ int _helium_getdeviceaddr(uint64_t macaddr, char *proxy, struct addrinfo **addre
     // only return ipv6 addresses
     hints.ai_family = AF_INET6;
   } else {
-    printf("using ipv4 proxy\n");
+    helium_dbg("using ipv4 proxy\n");
     target = proxy;
     hints.ai_family=AF_INET;
   }
@@ -286,6 +286,13 @@ void _helium_do_subscribe(uv_async_t *handle) {
   }
   err = _helium_getdeviceaddr(req->macaddr, conn->proxy_addr, &address);
   if (err == 0) {
+    if (conn->proxy_addr != NULL) {
+      // make room for prefixing the MAC onto the packet
+      packet = realloc(packet, count+8);
+      memmove(packet+8, packet, count);
+      memcpy(packet, (void*)&req->macaddr, 8);
+      count += 8;
+    }
     uv_buf_t buf = { (char*)packet, count };
     uv_udp_send_t *send_req = malloc(sizeof(uv_udp_send_t));
     send_req->data = packet;
@@ -369,7 +376,7 @@ void helium_free(helium_connection_t *conn)
   int err = uv_loop_close(&conn->loop);
   if (err) {
     // unclear why loop_close returns EBUSY, might be a libuv bug?
-    printf("ERROR loop close was non-zero: %d\n", err);
+    helium_dbg("ERROR loop close was non-zero: %d\n", err);
   }
 
   free(conn);
