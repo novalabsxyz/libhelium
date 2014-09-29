@@ -11,7 +11,15 @@ set(VERSION "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}")
 add_definitions(-DLIBHELIUM_VERSION="${VERSION}")
 add_definitions(-D_GNU_SOURCE) # you need this or libuv will not be happy
 
+include_directories(/usr/local/include)
 link_directories(/usr/local/lib)
+
+if (APPLE)
+  # use homebrew openssl not the system one
+  include_directories(/usr/local/opt/openssl/include)
+  link_directories(/usr/local/opt/openssl/lib)
+endif (APPLE)
+
 add_library(helium STATIC logging.c helium.c)
 # fPIC is needed to link a static lib to a shared object
 set_target_properties(helium PROPERTIES COMPILE_FLAGS "-fPIC")
