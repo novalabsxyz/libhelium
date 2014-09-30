@@ -234,6 +234,13 @@ void _helium_refresh_subscriptions(uv_timer_t *handle) {
     }
     err = _helium_getdeviceaddr(s->mac, conn->proxy_addr, &address);
     if (err == 0) {
+      if (conn->proxy_addr != NULL) {
+        // make room for prefixing the MAC onto the packet
+        packet = realloc(packet, count+8);
+        memmove(packet+8, packet, count);
+        memcpy(packet, (void*)&s->mac, 8);
+        count += 8;
+      }
       uv_buf_t buf = { (char*)packet, count };
       uv_udp_send_t *send_req = malloc(sizeof(uv_udp_send_t));
       send_req->data = packet;
