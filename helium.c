@@ -365,12 +365,12 @@ void helium_free(helium_connection_t *conn)
     HASH_DEL(conn->token_map, iter);
     free(iter);
   }
-  iter = NULL;
-  tmp = NULL;
+  
+  struct helium_mac_token_map *iter2 = NULL;
+  struct helium_mac_token_map *tmp2 = NULL;
 
-  HASH_ITER(hh, conn->subscription_map, iter, tmp) {
-    HASH_DEL(conn->subscription_map, iter);
-    free(iter);
+  HASH_ITER(hh, conn->subscription_map, iter2, tmp2) {
+    HASH_DEL(conn->subscription_map, iter2);
   }
 
   int err = uv_loop_close(&conn->loop);
