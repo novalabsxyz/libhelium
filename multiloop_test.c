@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <inttypes.h>
+#include <assert.h>
+#include <uv.h>
 
 #include <openssl/evp.h>
 #include <openssl/bio.h>
@@ -34,10 +36,14 @@ int main(int argc, char *argv[])
   helium_connection_t *conn = helium_alloc(&my_loop);
   helium_open(conn, proxy, test_callback);
 
+  int co = helium_open(conn, proxy, test_callback);
+  printf("Exists? %d\n", co);
+  assert(helium_open(conn, proxy, test_callback) == UV_EALREADY);
+
   helium_token_t token;
 
-  unsigned char *token1 = (unsigned char*)"c8GKvZyayaIhQpRjIo4aYQ==";
-  unsigned char *token2 = (unsigned char*)"E3J1AVDORcwOFsQDajBWOQ==";
+  unsigned char *token1 = (unsigned char*)"C8Slmiwm6dreZrUhy5YPiA==";
+  unsigned char *token2 = (unsigned char*)"hfB3WJsGZPOEgb0uz54IXg==";
 
   helium_base64_token_decode(token1, strlen((char*)token1), token);
   helium_subscribe(conn, 18838586654721, token);

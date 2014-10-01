@@ -33,15 +33,16 @@ typedef void (^helium_block_t)(const helium_connection_t *conn, uint64_t sender_
 typedef void (*helium_callback_t)(const helium_connection_t *conn, uint64_t sender_mac, char * const message, size_t count);
 
 
-/** 
- * @brief Allocates a new libhelium connection. 
- * 
- * The result of this function must be passed to `helium_free`.
- * If the provided `loop` is NULL, the default libhelium loop will be used, and a thread
- * will be spawned in the background to run this loop if it hasn't already been run.
- * If `loop` is non-NULL and not yet running with `uv_run`, it is the caller's responsibility
- * to do so.
- * @param loop The loop on which this connection will run. 
+/**
+    @brief Allocates a new libhelium connection. 
+
+    The result of this function must be passed to `helium_free()`.
+    If the provided `loop` is NULL, the default libhelium loop will be used, and a thread
+    will be spawned in the background to run this loop if it hasn't already been run.
+    If `loop` is non-NULL and not yet running with `uv_run`, it is the caller's responsibility
+    to do so.
+    
+    @param loop The loop on which this connection will run. 
  */
 helium_connection_t *helium_alloc(uv_loop_t *loop) __attribute__((malloc));
 
@@ -61,6 +62,12 @@ void helium_free(helium_connection_t *conn);
 */
 
 int helium_open(helium_connection_t *conn, char *proxy_addr, helium_callback_t callback);
+
+/**
+   @brief Closes a helium connection.
+   @param The connection to close.
+   @return 0 on success, `UV_EALREADY` if the connection is already open.
+*/
 int helium_close(helium_connection_t *conn);
 
 #if HAVE_BLOCKS
