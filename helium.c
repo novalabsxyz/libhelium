@@ -1,5 +1,5 @@
 #include <stdio.h>
-
+#include <inttypes.h>
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
@@ -30,7 +30,7 @@ void _run_default_loop(void *unused)
 // invoked by atexit(3)
 void _teardown_default_loop(void)
 {
-  
+
   // Kill the idling process
   uv_idle_stop(&__helium_loop_idler);
 
@@ -43,7 +43,7 @@ void _teardown_default_loop(void)
 
 void _do_nothing(uv_idle_t *unused)
 {
-  
+
 }
 
 void _start_default_loop(void)
@@ -158,7 +158,7 @@ int _helium_getdeviceaddr(uint64_t macaddr, char *proxy, struct addrinfo **addre
   char *target;
   struct addrinfo hints = {AF_UNSPEC, SOCK_DGRAM, 0, 0};
   if (proxy == NULL) {
-    asprintf(&target, "%lX.d.helium.io", macaddr);
+    asprintf(&target, "%" PRIX64 ".d.helium.io", macaddr);
     helium_dbg("looking up %s", target);
     if (target == NULL) {
       return -1;
@@ -222,28 +222,28 @@ void _helium_udp_recv_callback(uv_udp_t *handle, ssize_t nread, const uv_buf_t *
   if (!entry) {
     HASH_FIND(hh, conn->subscription_map, &macaddr, sizeof(macaddr), entry);
     if (!entry) {
-      helium_log(LOG_ERR, "couldn't find entry in mac->token map for mac addr %lx", macaddr);
+      helium_log(LOG_ERR, "couldn't find entry in mac->token map for mac addr %" PRIx64, macaddr);
       return;
     }
   }
-  
+
   int res = libhelium_decrypt_packet(entry->token, (unsigned char*)message, nread, &out);
   if (res < 1) {
     helium_dbg("decryption failed %d\n", res);
     free(out);
     return;
   }
-  
+
   helium_dbg("decryption result %d\n", res);
   helium_dbg("packet %s\n", out);
 
-  helium_dbg("MAC is %lu\n", macaddr);
+  helium_dbg("MAC is %" PRIu64 "\n", macaddr);
 
   // should we ever call this when nread < 1?
   conn->callback(conn, macaddr, (char*)out, res);
   free(out);
   free(buf->base);
-  
+
 }
 
 #if HAVE_BLOCKS
@@ -275,7 +275,7 @@ void _helium_refresh_subscriptions(uv_timer_t *handle) {
     packet=NULL;
     count = libhelium_encrypt_packet(s->token, (unsigned char*)"", 's', &packet);
     if (count < 1) {
-      helium_dbg("failed to encrypt re-subscription packet for %lu\n", s->mac);
+      helium_dbg("failed to encrypt re-subscription packet for %" PRIu64 "\n", s->mac);
       continue;
     }
     err = _helium_getdeviceaddr(s->mac, conn->proxy_addr, &address);
@@ -291,7 +291,7 @@ void _helium_refresh_subscriptions(uv_timer_t *handle) {
       uv_udp_send_t *send_req = malloc(sizeof(uv_udp_send_t));
       send_req->data = packet;
       uv_udp_send(send_req, &conn->udp_handle, &buf, 1, address->ai_addr, _helium_send_callback);
-      helium_dbg("resubscribed to %lu\n", s->mac);
+      helium_dbg("resubscribed to %" PRIu64 "\n", s->mac);
       freeaddrinfo(address);
     } else {
       free(packet);
@@ -333,7 +333,7 @@ void _helium_do_subscribe(uv_async_t *handle) {
   int err;
   count = libhelium_encrypt_packet(req->token, (unsigned char*)"", 's', &packet);
   if (count < 1) {
-    helium_dbg("failed to encrypt ubscription packet for %lu\n", req->macaddr);
+    helium_dbg("failed to encrypt ubscription packet for %" PRIu64 "\n", req->macaddr);
     free(req);
     return;
   }
@@ -350,7 +350,7 @@ void _helium_do_subscribe(uv_async_t *handle) {
     uv_udp_send_t *send_req = malloc(sizeof(uv_udp_send_t));
     send_req->data = packet;
     uv_udp_send(send_req, &conn->udp_handle, &buf, 1, address->ai_addr, _helium_send_callback);
-    helium_dbg("subscribed to %lu\n", req->macaddr);
+    helium_dbg("subscribed to %" PRIu64 "\n", req->macaddr);
     freeaddrinfo(address);
   } else {
     free(packet);
@@ -411,7 +411,7 @@ helium_connection_t *helium_alloc(uv_loop_t *loop)
     loop = helium_default_loop();
   }
   conn->loop = loop;
-  // TODO: do we need to increment the refcount of the loop 
+  // TODO: do we need to increment the refcount of the loop
   // (and decrement it in helium_free?)
   return conn;
 }
@@ -425,14 +425,14 @@ void helium_free(helium_connection_t *conn)
     HASH_DEL(conn->token_map, iter);
     free(iter);
   }
-  
+
   struct helium_mac_token_map *iter2 = NULL;
   struct helium_mac_token_map *tmp2 = NULL;
 
   HASH_ITER(hh, conn->subscription_map, iter2, tmp2) {
     HASH_DEL(conn->subscription_map, iter2);
   }
-  
+
   free(conn);
 }
 
@@ -479,7 +479,7 @@ int helium_open(helium_connection_t *conn, char *proxy_addr, helium_callback_t c
   if (err != 0) {
     return err;
   }
-  
+
   return 0;
 }
 

@@ -1,6 +1,6 @@
-
 #include <stdio.h>
 #include <string.h>
+#include <inttypes.h>
 
 #include <openssl/evp.h>
 #include <openssl/bio.h>
@@ -11,13 +11,13 @@
 void test_callback(const helium_connection_t *conn, uint64_t sender_mac, char * const message, size_t count)
 {
   helium_dbg("1 Function-pointer callback got %s %zd\n", message, count);
-  helium_dbg("1 Mac address is %lu\n", sender_mac);
+  helium_dbg("1 Mac address is %" PRIu64 "\n", sender_mac);
 }
 
 void test_callback2(const helium_connection_t *conn, uint64_t sender_mac, char * const message, size_t count)
 {
   helium_dbg("2 Function-pointer callback got %s %zd\n", message, count);
-  helium_dbg("2 Mac address is %lu\n", sender_mac);
+  helium_dbg("2 Mac address is %" PRIu64 "\n", sender_mac);
 }
 
 void _run_my_loop(void *arg)
