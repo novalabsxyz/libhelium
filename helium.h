@@ -1,4 +1,8 @@
-// Copyright (c) 2014 Helium Systems, Inc.
+/**
+   @file helium.h
+   @authors the Helium team
+   @copyright Helium Systems, 2014
+*/
 
 #include <stdio.h>
 #include <stdint.h>
@@ -26,6 +30,16 @@ typedef void (*helium_callback_t)(const helium_connection_t *conn, uint64_t send
 
 helium_connection_t *helium_alloc(void) __attribute__((malloc));
 void helium_free(helium_connection_t *conn);
+
+/**
+   @brief Open a helium connection, receiving data with the provided callback.
+
+   A `helium_open` operation must be balanced by a call to `helium_close()`.
+
+   @param conn The connection to open.
+   @param proxy_addr An optional IPv4 proxy to use. If `NULL`, IPv6 is used.
+   @param callback A function pointer that will be invoked when this connection receives data.
+*/
 
 int helium_open(helium_connection_t *conn, char *proxy_addr, helium_callback_t callback);
 int helium_close(helium_connection_t *conn);

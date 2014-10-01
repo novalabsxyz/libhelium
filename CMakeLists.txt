@@ -55,3 +55,10 @@ endif(CMAKE_C_COMPILER_ID MATCHES "clang")
 install(TARGETS helium DESTINATION lib)
 
 install(FILES helium.h DESTINATION include)
+
+find_package(Doxygen)
+if (DOXYGEN_FOUND)
+  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile.out @ONLY)
+  add_custom_target(doc ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile.out WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    COMMENT "Generating API documentation with Doxygen" )
+endif(DOXYGEN_FOUND)
