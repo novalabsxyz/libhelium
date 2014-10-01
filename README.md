@@ -10,7 +10,7 @@ example
 #include <helium.h>
 
 // create a new connection
-helium_collection_t *conn = helium_alloc();
+helium_collection_t *conn = helium_alloc(NULL);
 
 // associate it with a callback (with function pointers or, if you're fancy C/C++ lambdas)
 helium_open_b(conn, ^(const helium_connection_t *conn, uint64_t mac, char *msg, size_t n) {
