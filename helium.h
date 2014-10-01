@@ -24,6 +24,13 @@ typedef void (^helium_block_t)(const helium_connection_t *conn, uint64_t sender_
 
 typedef void (*helium_callback_t)(const helium_connection_t *conn, uint64_t sender_mac, char * const message, size_t count);
 
+
+/// Allocates a new libhelium connection. 
+///
+/// The result of this function must be passed to :func:`helium_free`.
+/// If the provided `loop` is NULL, the default libhelium loop will be used, and a thread
+/// will be spawned in the background to run this loop if it hasn't already been run.
+/// :param loop The loop on which this connection will run. 
 helium_connection_t *helium_alloc(uv_loop_t *loop) __attribute__((malloc));
 void helium_free(helium_connection_t *conn);
 
