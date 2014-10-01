@@ -1,6 +1,6 @@
-
 #include <stdio.h>
 #include <string.h>
+#include <inttypes.h>
 
 #include <openssl/evp.h>
 #include <openssl/bio.h>
@@ -11,7 +11,7 @@
 void test_callback(const helium_connection_t *conn, uint64_t sender_mac, char * const message, size_t count)
 {
   helium_dbg("Function-pointer callback got %s %zd\n", message, count);
-  helium_dbg("Mac address is %lu\n", sender_mac);
+  helium_dbg("Mac address is %" PRIu64 "\n", sender_mac);
 }
 
 int main(int argc, char *argv[])
@@ -42,7 +42,7 @@ int main(int argc, char *argv[])
   char message[1024];
   int ret;
   while(1) {
-    ret = scanf("%lx %s %[^\n]", &mac, token_in, message);
+    ret = scanf("%" PRIx64 " %s %[^\n]", &mac, token_in, message);
     if (ret > 0) {
       helium_base64_token_decode(token_in, strlen((char*)token_in), token);
       if (strncmp("s", message, 1) == 0) {
