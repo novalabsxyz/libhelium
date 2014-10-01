@@ -5,9 +5,11 @@
 #include "helium.h"
 #include "uthash.h"
 
+/** 
+ * test
+ */
 struct helium_connection_s {
-  uv_loop_t loop;
-  uv_thread_t thread;
+  uv_loop_t *loop;
   uv_async_t send_async;
   uv_async_t subscribe_async;
   uv_async_t quit_async;

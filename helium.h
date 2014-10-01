@@ -4,6 +4,10 @@
    @copyright Helium Systems, 2014
 */
 
+/** @file
+ *  @author The Helium team
+ */
+
 #include <stdio.h>
 #include <stdint.h>
 #include <uv.h>
@@ -28,7 +32,22 @@ typedef void (^helium_block_t)(const helium_connection_t *conn, uint64_t sender_
 
 typedef void (*helium_callback_t)(const helium_connection_t *conn, uint64_t sender_mac, char * const message, size_t count);
 
-helium_connection_t *helium_alloc(void) __attribute__((malloc));
+
+/** 
+ * @brief Allocates a new libhelium connection. 
+ * 
+ * The result of this function must be passed to `helium_free`.
+ * If the provided `loop` is NULL, the default libhelium loop will be used, and a thread
+ * will be spawned in the background to run this loop if it hasn't already been run.
+ * If `loop` is non-NULL and not yet running with `uv_run`, it is the caller's responsibility
+ * to do so.
+ * @param loop The loop on which this connection will run. 
+ */
+helium_connection_t *helium_alloc(uv_loop_t *loop) __attribute__((malloc));
+
+/// Gets the `uv_loop_t` onto which Helium connections are added by default.
+uv_loop_t *helium_default_loop(void);
+
 void helium_free(helium_connection_t *conn);
 
 /**

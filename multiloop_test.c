@@ -20,15 +20,26 @@ void test_callback2(const helium_connection_t *conn, uint64_t sender_mac, char *
   helium_dbg("2 Mac address is %lu\n", sender_mac);
 }
 
+void _run_my_loop(void *arg)
+{
+  uv_loop_t *loop = (uv_loop_t *)arg;
+  uv_run(loop, UV_RUN_DEFAULT);
+}
 
 int main(int argc, char *argv[])
 {
+  uv_thread_t my_thread_runner;
+  uv_loop_t *my_loop = uv_loop_new();
+  uv_loop_init(my_loop);
+  uv_thread_create(&my_thread_runner, _run_my_loop, (void *)my_loop);
+  
+  
   helium_logging_start();
   char *proxy = NULL;
-  helium_connection_t *conn = helium_alloc();
+  helium_connection_t *conn = helium_alloc(NULL);
   helium_open(conn, proxy, test_callback);
 
-  helium_connection_t *conn2 = helium_alloc();
+  helium_connection_t *conn2 = helium_alloc(my_loop);
   helium_open(conn2, proxy, test_callback2);
 
   helium_token_t token;
@@ -44,6 +55,7 @@ int main(int argc, char *argv[])
   while(1) {
   }
 
+  uv_thread_join(&my_thread_runner);
   helium_close(conn);
   helium_free(conn);
   return 0;

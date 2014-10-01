@@ -19,7 +19,7 @@ int main(int argc, char *argv[])
   helium_logging_start();
   char *proxy = NULL;
   //helium_token_t token = "abcdefghijklmnop";
-  helium_connection_t *conn = helium_alloc();
+  helium_connection_t *conn = helium_alloc(NULL);
   if (argc == 3 && strcmp("-p", argv[1]) == 0) {
     printf("proxy %s\n", argv[2]);
     proxy = argv[2];
