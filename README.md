@@ -29,9 +29,10 @@ libhelium depends on [libuv](https://github.com/joyent/libuv) (>= 0.11.29) for c
 
 ## OS X
 
-You'll need libuv and libcrypto (a newer one than the system OS X). Assuming you have [Homebrew](http://brew.sh) installed:
+You'll need cmake, libuv and libcrypto (a newer one than the system OS X). Assuming you have [Homebrew](http://brew.sh) installed:
 
 ```
+brew install cmake
 brew install openssl
 brew install --devel libuv
 ```
@@ -44,9 +45,8 @@ building
 ========
 
 ```
-  git clone
-  mkdir build
-  cd build
+  git clone git@github.com:nervcorp/libhelium ; cd libhelium
+  mkdir build ; cd build
   cmake ..
   make
 ```
