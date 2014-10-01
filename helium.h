@@ -32,6 +32,10 @@ typedef void (*helium_callback_t)(const helium_connection_t *conn, uint64_t send
 /// will be spawned in the background to run this loop if it hasn't already been run.
 /// :param loop The loop on which this connection will run. 
 helium_connection_t *helium_alloc(uv_loop_t *loop) __attribute__((malloc));
+
+/// Gets the `uv_loop_t` onto which Helium connections are added by default.
+uv_loop_t *helium_default_loop(void);
+
 void helium_free(helium_connection_t *conn);
 
 int helium_open(helium_connection_t *conn, char *proxy_addr, helium_callback_t callback);
