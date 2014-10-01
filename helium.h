@@ -61,7 +61,7 @@ void helium_free(helium_connection_t *conn);
    @param callback A function pointer that will be invoked when this connection receives data.
 */
 
-int helium_open(helium_connection_t *conn, char *proxy_addr, helium_callback_t callback);
+int helium_open(helium_connection_t *conn, const char *proxy_addr, helium_callback_t callback);
 
 /**
    @brief Closes a helium connection.

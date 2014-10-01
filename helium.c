@@ -60,6 +60,7 @@ uv_loop_t *helium_default_loop(void)
 {
   static uv_once_t once = UV_ONCE_INIT;
   uv_once(&once, _start_default_loop);
+  printf("Helium struct is %ld bytes\n", sizeof(helium_connection_t));
 
   return &__helium_default_loop;
 }
@@ -437,7 +438,7 @@ void helium_free(helium_connection_t *conn)
   free(conn);
 }
 
-int helium_open(helium_connection_t *conn, char *proxy_addr, helium_callback_t callback)
+int helium_open(helium_connection_t *conn, const char *proxy_addr, helium_callback_t callback)
 {
   _Bool was_open = atomic_flag_test_and_set(&conn->is_open);
   if (was_open) {
@@ -478,8 +479,11 @@ int helium_open(helium_connection_t *conn, char *proxy_addr, helium_callback_t c
   }
 
   conn->udp_handle.data = conn;
-  conn->proxy_addr = proxy_addr;
   conn->callback = callback;
+
+  if (proxy_addr) {
+    strcpy(conn->proxy_addr, proxy_addr);
+  }
 
   err = uv_udp_recv_start(&conn->udp_handle, _helium_buffer_alloc_callback, _helium_udp_recv_callback);
   if (err != 0) {
@@ -546,6 +550,7 @@ int helium_send(helium_connection_t *conn, uint64_t macaddr, helium_token_t toke
 int helium_close(helium_connection_t *conn)
 {
   atomic_flag_clear(&conn->is_open);
+  free(conn->proxy_addr);
   conn->quit_async.data = conn;
   uv_async_send(&conn->quit_async);
 
