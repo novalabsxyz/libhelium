@@ -24,7 +24,7 @@ typedef void (^helium_block_t)(const helium_connection_t *conn, uint64_t sender_
 
 typedef void (*helium_callback_t)(const helium_connection_t *conn, uint64_t sender_mac, char * const message, size_t count);
 
-helium_connection_t *helium_alloc(void) __attribute__((malloc));
+helium_connection_t *helium_alloc(uv_loop_t *loop) __attribute__((malloc));
 void helium_free(helium_connection_t *conn);
 
 int helium_open(helium_connection_t *conn, char *proxy_addr, helium_callback_t callback);

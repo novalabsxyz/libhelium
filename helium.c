@@ -12,9 +12,55 @@
 #include "helium_internal.h"
 #include "logging.h"
 
+uv_loop_t __helium_default_loop;
+uv_thread_t __helium_loop_runner_thread;
+uv_idle_t __helium_loop_idler;
+
 const char *libhelium_version()
 {
   return LIBHELIUM_VERSION;
+}
+
+// invoked via __helium_loop_runner_thread
+void _run_default_loop(void *unused)
+{
+  uv_run(&__helium_default_loop, UV_RUN_DEFAULT);
+}
+
+// invoked by atexit(3)
+void _teardown_default_loop(void)
+{
+  // Kill the idling process
+  uv_idle_stop(&__helium_loop_idler);
+
+  // And the loop
+  uv_stop(&__helium_default_loop);
+  uv_loop_close(&__helium_default_loop);
+
+  // And the thread that was running uv_run on that loop
+  uv_thread_join(&__helium_loop_runner_thread);
+}
+
+void _do_nothing(uv_idle_t *unused)
+{
+  
+}
+
+void _start_default_loop(void)
+{
+  uv_loop_init(&__helium_default_loop);
+  uv_idle_init(&__helium_default_loop, &__helium_loop_idler);
+  uv_idle_start(&__helium_loop_idler, _do_nothing);
+  uv_thread_create(&__helium_loop_runner_thread, _run_default_loop, NULL);
+  atexit(_teardown_default_loop);
+}
+
+uv_loop_t *helium_default_loop(void)
+{
+  static uv_once_t once = UV_ONCE_INIT;
+  uv_once(&once, _start_default_loop);
+
+  return &__helium_default_loop;
 }
 
 // encrypt a message into a packet
@@ -348,12 +394,19 @@ done:
 void _bootup(void *arg)
 {
   helium_connection_t *conn = (helium_connection_t *)arg;
-  uv_run(&conn->loop, UV_RUN_DEFAULT);
+  uv_run(conn->loop, UV_RUN_DEFAULT);
 }
 
-helium_connection_t *helium_alloc(void)
+helium_connection_t *helium_alloc(uv_loop_t *loop)
 {
-  return calloc(sizeof(helium_connection_t), 1);
+  helium_connection_t *conn = calloc(sizeof(helium_connection_t), 1);
+  if (loop == NULL) {
+    loop = helium_default_loop();
+  }
+  conn->loop = loop;
+  // TODO: do we need to increment the refcount of the loop 
+  // (and decrement it in helium_free?)
+  return conn;
 }
 
 void helium_free(helium_connection_t *conn)
@@ -373,7 +426,7 @@ void helium_free(helium_connection_t *conn)
     HASH_DEL(conn->subscription_map, iter2);
   }
 
-  int err = uv_loop_close(&conn->loop);
+  int err = uv_loop_close(conn->loop);
   if (err) {
     // unclear why loop_close returns EBUSY, might be a libuv bug?
     helium_dbg("ERROR loop close was non-zero: %d\n", err);
@@ -384,17 +437,15 @@ void helium_free(helium_connection_t *conn)
 
 int helium_open(helium_connection_t *conn, char *proxy_addr, helium_callback_t callback)
 {
-  // should we parameterize this function so as to allow a passed loop?
-  uv_loop_init(&conn->loop);
   conn->token_map = NULL;
   conn->subscription_map = NULL;
-  uv_async_init(&conn->loop, &conn->send_async, _helium_do_udp_send);
-  uv_async_init(&conn->loop, &conn->subscribe_async, _helium_do_subscribe);
-  uv_async_init(&conn->loop, &conn->quit_async, _helium_do_quit);
-  uv_timer_init(&conn->loop, &conn->subscription_timer);
+  uv_async_init(conn->loop, &conn->send_async, _helium_do_udp_send);
+  uv_async_init(conn->loop, &conn->subscribe_async, _helium_do_subscribe);
+  uv_async_init(conn->loop, &conn->quit_async, _helium_do_quit);
+  uv_timer_init(conn->loop, &conn->subscription_timer);
   conn->subscription_timer.data = conn;
   uv_timer_start(&conn->subscription_timer, _helium_refresh_subscriptions, 30000, 30000);
-  int err = uv_udp_init(&conn->loop, &conn->udp_handle);
+  int err = uv_udp_init(conn->loop, &conn->udp_handle);
 
   if (err) {
     return err;

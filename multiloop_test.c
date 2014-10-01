@@ -25,10 +25,10 @@ int main(int argc, char *argv[])
 {
   helium_logging_start();
   char *proxy = NULL;
-  helium_connection_t *conn = helium_alloc();
+  helium_connection_t *conn = helium_alloc(NULL);
   helium_open(conn, proxy, test_callback);
 
-  helium_connection_t *conn2 = helium_alloc();
+  helium_connection_t *conn2 = helium_alloc(NULL);
   helium_open(conn2, proxy, test_callback2);
 
   helium_token_t token;

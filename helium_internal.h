@@ -6,7 +6,7 @@
 #include "uthash.h"
 
 struct helium_connection_s {
-  uv_loop_t loop;
+  uv_loop_t *loop;
   uv_thread_t thread;
   uv_async_t send_async;
   uv_async_t subscribe_async;
