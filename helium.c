@@ -30,6 +30,7 @@ void _run_default_loop(void *unused)
 // invoked by atexit(3)
 void _teardown_default_loop(void)
 {
+  
   // Kill the idling process
   uv_idle_stop(&__helium_loop_idler);
 
@@ -37,7 +38,6 @@ void _teardown_default_loop(void)
   uv_stop(&__helium_default_loop);
   uv_loop_close(&__helium_default_loop);
 
-  // And the thread that was running uv_run on that loop
   uv_thread_join(&__helium_loop_runner_thread);
 }
 
@@ -425,13 +425,7 @@ void helium_free(helium_connection_t *conn)
   HASH_ITER(hh, conn->subscription_map, iter2, tmp2) {
     HASH_DEL(conn->subscription_map, iter2);
   }
-
-  int err = uv_loop_close(conn->loop);
-  if (err) {
-    // unclear why loop_close returns EBUSY, might be a libuv bug?
-    helium_dbg("ERROR loop close was non-zero: %d\n", err);
-  }
-
+  
   free(conn);
 }
 
@@ -478,10 +472,7 @@ int helium_open(helium_connection_t *conn, char *proxy_addr, helium_callback_t c
   if (err != 0) {
     return err;
   }
-
-  // kick off the thread
-  uv_thread_create(&conn->thread, _bootup, conn);
- 
+  
   return 0;
 }
 
@@ -543,7 +534,6 @@ int helium_close(helium_connection_t *conn)
 {
   conn->quit_async.data = conn;
   uv_async_send(&conn->quit_async);
-  uv_thread_join(&conn->thread);
 
   return 0;
 }
