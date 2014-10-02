@@ -1,12 +1,6 @@
 #include <stdio.h>
 #include <inttypes.h>
 #include <assert.h>
-
-#if HAVE_SYS_STDATOMIC
-#include <stdatomic.h>
-#else
-#include "helium_stdatomic.h"
-#endif
 #include <stdlib.h>
 #include <string.h>
 
@@ -445,11 +439,6 @@ void helium_free(helium_connection_t *conn)
 
 int helium_open(helium_connection_t *conn, const char *proxy_addr, helium_callback_t callback)
 {
-  _Bool was_open = atomic_flag_test_and_set(&conn->is_open);
-  if (was_open) {
-    return UV_EALREADY;
-  }
-  
   conn->token_map = NULL;
   conn->subscription_map = NULL;
   uv_async_init(conn->loop, &conn->send_async, _helium_do_udp_send);
@@ -554,7 +543,6 @@ int helium_send(helium_connection_t *conn, uint64_t macaddr, helium_token_t toke
 
 int helium_close(helium_connection_t *conn)
 {
-  atomic_flag_clear(&conn->is_open);
   free(conn->proxy_addr);
   conn->quit_async.data = conn;
   uv_async_send(&conn->quit_async);
