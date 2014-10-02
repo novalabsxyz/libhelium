@@ -16,7 +16,7 @@ add_definitions(-D_GNU_SOURCE) # you need this or libuv will not be happy
 include_directories(/usr/local/include)
 link_directories(/usr/local/lib)
 
-CHECK_INCLUDE_FILES(stdatomic.h, HAVE_SYS_STDATOMIC)
+check_include_files("stdatomic.h" HAVE_SYS_STDATOMIC)
 
 if (APPLE)
   # use homebrew openssl not the system one
