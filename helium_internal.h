@@ -22,7 +22,7 @@ struct helium_connection_s {
   struct helium_mac_token_map *token_map;
   struct helium_mac_token_map *subscription_map;
 
-  _Bool is_open;
+  _Atomic _Bool is_open;
 #if HAVE_BLOCKS
   helium_block_t callback_block;
 #endif

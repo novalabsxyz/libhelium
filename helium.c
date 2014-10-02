@@ -1,7 +1,12 @@
 #include <stdio.h>
 #include <inttypes.h>
 #include <assert.h>
+
+#if HAVE_SYS_STDATOMIC
 #include <stdatomic.h>
+#else
+#include "helium_stdatomic.h"
+#endif
 #include <stdlib.h>
 #include <string.h>
 
