@@ -432,6 +432,7 @@ void helium_free(helium_connection_t *conn)
 
   HASH_ITER(hh, conn->subscription_map, iter2, tmp2) {
     HASH_DEL(conn->subscription_map, iter2);
+    free(iter2);
   }
 
   free(conn);
