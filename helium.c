@@ -477,6 +477,7 @@ int helium_open(helium_connection_t *conn, const char *proxy_addr, helium_callba
   conn->callback = callback;
 
   if (proxy_addr) {
+    conn->proxy_addr = malloc(strlen(proxy_addr)+1);
     strcpy(conn->proxy_addr, proxy_addr);
   }
 
