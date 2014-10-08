@@ -55,3 +55,13 @@ testing
 =======
 
 The `helium_test` executable listens on stdin for lines of the form `<MAC> <token> <message>`. Sending the single character `'s'` tests the subscription features.
+
+For example:
+
+```
+./helium_test -p r01.sjc.helium.io
+...
+00212effff005841 29dcxtSTIsyGFZ6TVcwJ3g== s
+```
+
+will subscribe you to messages from device 00212effff005841 that is being routed through r01.
