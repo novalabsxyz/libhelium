@@ -29,6 +29,30 @@ struct helium_mac_token_map {
   UT_hash_handle hh;
 };
 
+typedef enum {
+  SEND_REQUEST = 0,
+  SUBSCRIBE_REQUEST,
+  QUIT_REQUEST
+} helium_request_type_t;
+
+struct helium_request_s {
+  helium_request_type_t request_type;
+  helium_connection_t *conn;
+  uint64_t macaddr;
+  helium_token_t token;
+  union {
+    struct {
+      char *message;
+      size_t count;
+    } send_request;
+
+    struct {
+      unsigned char subscribe;
+    } subscribe_request;
+  } as;
+};
+
+
 int _handle_subscribe_request(helium_connection_t *conn,
                               uint64_t macaddr,
                               helium_token_t token,
