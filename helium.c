@@ -148,13 +148,6 @@ struct helium_send_req_s {
   helium_connection_t *conn;
 };
 
-struct helium_subscribe_req_s {
-  uint64_t macaddr;
-  helium_token_t token;
-  helium_connection_t *conn;
-  unsigned char subscribe;
-};
-
 int _helium_getdeviceaddr(uint64_t macaddr, char *proxy, struct addrinfo **address) {
   char *target;
   struct addrinfo hints = {AF_UNSPEC, SOCK_DGRAM, 0, 0};
