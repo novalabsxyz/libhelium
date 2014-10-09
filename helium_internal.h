@@ -7,8 +7,7 @@
 
 struct helium_connection_s {
   uv_loop_t *loop;
-  uv_async_t send_async;
-  uv_async_t subscribe_async;
+  uv_async_t async_handle;
   uv_udp_t udp_handle;
   uv_timer_t subscription_timer;
   struct addrinfo connection_address;
@@ -41,7 +40,7 @@ struct helium_request_s {
   helium_token_t token;
   union {
     struct {
-      char *message;
+      unsigned char *message;
       size_t count;
     } send_request;
 
@@ -51,6 +50,11 @@ struct helium_request_s {
   } as;
 };
 
+int _helium_do_udp_send(helium_connection_t *conn,
+                        uint64_t macaddr,
+                        helium_token_t token,
+                        unsigned char *message,
+                        size_t count);
 
 int _handle_subscribe_request(helium_connection_t *conn,
                               uint64_t macaddr,
