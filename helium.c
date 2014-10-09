@@ -184,12 +184,15 @@ void _helium_async_callback(uv_async_t *async)
   uint64_t macaddr = request->macaddr;
   int result = 0;
 
+  assert(conn != NULL);
+
   switch (request->request_type) {
   case SUBSCRIBE_REQUEST:
     result = _handle_subscribe_request(conn, macaddr, request->token, request->as.subscribe_request.subscribe);
   case SEND_REQUEST:
+    break;
   case QUIT_REQUEST:
-    ;
+    result = _handle_quit(conn);
   }
 
   if (result != 0) {
@@ -316,9 +319,9 @@ void _helium_refresh_subscriptions(uv_timer_t *handle) {
   }
 }
 
-void _helium_do_quit(uv_async_t *handle) {
-  helium_connection_t *conn = handle->data;
-  // stop UDP and the resubscription timer
+int _handle_quit(helium_connection_t *conn)
+{
+    // stop UDP and the resubscription timer
   uv_udp_recv_stop(&conn->udp_handle);
   uv_timer_stop(&conn->subscription_timer);
   // unref all the handles
@@ -326,9 +329,8 @@ void _helium_do_quit(uv_async_t *handle) {
   uv_unref((uv_handle_t*)&conn->subscription_timer);
   uv_unref((uv_handle_t*)&conn->send_async);
   uv_unref((uv_handle_t*)&conn->subscribe_async);
-  uv_unref((uv_handle_t*)&conn->quit_async);
-  // we don't need to uv_stop() here, the event loop exits normally
-  /*uv_stop(&conn->loop);*/
+
+  return 0;
 }
 
 int _handle_subscribe_request(helium_connection_t *conn,
@@ -464,7 +466,6 @@ int helium_open(helium_connection_t *conn, const char *proxy_addr, helium_callba
   conn->subscription_map = NULL;
   uv_async_init(conn->loop, &conn->send_async, _helium_do_udp_send);
   uv_async_init(conn->loop, &conn->subscribe_async, _helium_async_callback);
-  uv_async_init(conn->loop, &conn->quit_async, _helium_do_quit);
   uv_timer_init(conn->loop, &conn->subscription_timer);
   conn->subscription_timer.data = conn;
   uv_timer_start(&conn->subscription_timer, _helium_refresh_subscriptions, 30000, 30000);
@@ -568,8 +569,12 @@ int helium_send(helium_connection_t *conn, uint64_t macaddr, helium_token_t toke
 int helium_close(helium_connection_t *conn)
 {
   free(conn->proxy_addr);
-  conn->quit_async.data = conn;
-  uv_async_send(&conn->quit_async);
+  struct helium_request_s *request = calloc(1, sizeof(struct helium_request_s));
+  request->conn = conn;
+  request->request_type = QUIT_REQUEST;
+  
+  conn->subscribe_async.data = request;
+  uv_async_send(&conn->subscribe_async);
 
   return 0;
 }

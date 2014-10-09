@@ -9,7 +9,6 @@ struct helium_connection_s {
   uv_loop_t *loop;
   uv_async_t send_async;
   uv_async_t subscribe_async;
-  uv_async_t quit_async;
   uv_udp_t udp_handle;
   uv_timer_t subscription_timer;
   struct addrinfo connection_address;
@@ -47,7 +46,7 @@ struct helium_request_s {
     } send_request;
 
     struct {
-      unsigned char subscribe;
+      unsigned char subscribe; // currently unused, but we'll use this for unsubscribe
     } subscribe_request;
   } as;
 };
@@ -57,3 +56,5 @@ int _handle_subscribe_request(helium_connection_t *conn,
                               uint64_t macaddr,
                               helium_token_t token,
                               unsigned char subscribe);
+
+int _handle_quit(helium_connection_t *conn);
