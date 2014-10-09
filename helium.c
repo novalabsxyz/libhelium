@@ -182,7 +182,7 @@ void _helium_async_callback(uv_async_t *async)
   case SUBSCRIBE_REQUEST:
     result = _handle_subscribe_request(conn, macaddr, request->token, request->as.subscribe_request.subscribe);
   case SEND_REQUEST:
-    result = _helium_do_udp_send(conn, macaddr, request->token, request->as.send_request.message, request->as.send_request.count);
+    result = _handle_send_request(conn, macaddr, request->token, request->as.send_request.message, request->as.send_request.count);
   case QUIT_REQUEST:
     result = _handle_quit(conn);
   }
@@ -373,11 +373,11 @@ int _handle_subscribe_request(helium_connection_t *conn,
   return 0;
 }
 
-int _helium_do_udp_send(helium_connection_t *conn,
-                        uint64_t macaddr,
-                        helium_token_t token,
-                        unsigned char *message,
-                        size_t count)
+int _handle_send_request(helium_connection_t *conn,
+                         uint64_t macaddr,
+                         helium_token_t token,
+                         unsigned char *message,
+                         size_t count)
 {
   // keep track of the token, so we can decrypt replies
   struct helium_mac_token_map *entry = malloc(sizeof(struct helium_mac_token_map));

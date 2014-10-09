@@ -50,11 +50,11 @@ struct helium_request_s {
   } as;
 };
 
-int _helium_do_udp_send(helium_connection_t *conn,
-                        uint64_t macaddr,
-                        helium_token_t token,
-                        unsigned char *message,
-                        size_t count);
+int _handle_send_request(helium_connection_t *conn,
+                         uint64_t macaddr,
+                         helium_token_t token,
+                         unsigned char *message,
+                         size_t count);
 
 int _handle_subscribe_request(helium_connection_t *conn,
                               uint64_t macaddr,
