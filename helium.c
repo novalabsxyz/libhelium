@@ -572,9 +572,6 @@ int helium_send(helium_connection_t *conn, uint64_t macaddr, helium_token_t toke
   req->count = count;
   req->conn = conn;
   uv_mutex_lock(&conn->mutex);
-  //while (uv_mutex_trylock(&conn->mutex)) {
-  //  printf("thread %d blocked in mutex\n", (int)pthread_self());
-  //}
   conn->send_async.data = (void*)req;
   uv_async_send(&conn->send_async);
   // wait for the event loop to call sem_post on this semaphore
