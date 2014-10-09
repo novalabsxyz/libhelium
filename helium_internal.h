@@ -5,9 +5,6 @@
 #include "helium.h"
 #include "uthash.h"
 
-/** 
- * test
- */
 struct helium_connection_s {
   uv_loop_t *loop;
   uv_async_t send_async;
@@ -31,3 +28,8 @@ struct helium_mac_token_map {
   helium_token_t token;
   UT_hash_handle hh;
 };
+
+int _handle_subscribe_request(helium_connection_t *conn,
+                              uint64_t macaddr,
+                              helium_token_t token,
+                              unsigned char subscribe);

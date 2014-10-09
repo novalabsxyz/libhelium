@@ -181,6 +181,29 @@ int _helium_getdeviceaddr(uint64_t macaddr, char *proxy, struct addrinfo **addre
   return err;
 }
 
+void _helium_async_callback(uv_async_t *async)
+{
+  helium_dbg("In async callback");
+  struct helium_request_s *request = (struct helium_request_s *)async->data;
+  assert(request != NULL);
+
+  helium_connection_t *conn = request->conn;
+  uint64_t macaddr = request->macaddr;
+  int result = 0;
+
+  switch (request->request_type) {
+  case SUBSCRIBE_REQUEST:
+    result = _handle_subscribe_request(conn, macaddr, request->token, request->as.subscribe_request.subscribe);
+  case SEND_REQUEST:
+  case QUIT_REQUEST:
+    ;
+  }
+
+  if (result != 0) {
+    free(request);
+  }
+}
+
 void _helium_buffer_alloc_callback(uv_handle_t *handle, size_t suggested, uv_buf_t *dst)
 {
   char *chunk = malloc(suggested);
@@ -315,49 +338,53 @@ void _helium_do_quit(uv_async_t *handle) {
   /*uv_stop(&conn->loop);*/
 }
 
-void _helium_do_subscribe(uv_async_t *handle) {
-  struct helium_subscribe_req_s *req = (struct helium_subscribe_req_s*)handle->data;
-  helium_connection_t *conn = req->conn;
-
-  // keep track of the token, so we can decrypt replies
+int _handle_subscribe_request(helium_connection_t *conn,
+                              uint64_t macaddr,
+                              helium_token_t token,
+                              unsigned char subscribe)
+{
+    // keep track of the token, so we can decrypt replies
   struct helium_mac_token_map *entry = malloc(sizeof(struct helium_mac_token_map));
-  entry->mac = req->macaddr;
-  memcpy(entry->token, req->token, sizeof(helium_token_t));
+  entry->mac = macaddr;
+  memcpy(entry->token, token, sizeof(helium_token_t));
 
   struct helium_mac_token_map *old = NULL;
   HASH_REPLACE(hh, conn->subscription_map, mac, sizeof(uint64_t), entry, old);
   free(old); // no-op if old == NULL, otherwise frees the old entry
 
-  size_t count;
-  unsigned char *packet = NULL;
+
   struct addrinfo *address = NULL;
+  unsigned char *packet = NULL;
   int err;
-  count = libhelium_encrypt_packet(req->token, (unsigned char*)"", 's', &packet);
+  size_t count;
+  
+  count = libhelium_encrypt_packet(token, (unsigned char*)"", 's', &packet);
   if (count < 1) {
-    helium_dbg("failed to encrypt ubscription packet for %" PRIu64 "\n", req->macaddr);
-    free(req);
-    return;
+    helium_dbg("failed to encrypt ubscription packet for %" PRIu64 "\n", macaddr);
+    return -1;
   }
-  err = _helium_getdeviceaddr(req->macaddr, conn->proxy_addr, &address);
+  
+  err = _helium_getdeviceaddr(macaddr, conn->proxy_addr, &address);
   if (err == 0) {
     if (conn->proxy_addr != NULL) {
       // make room for prefixing the MAC onto the packet
       packet = realloc(packet, count+8);
       memmove(packet+8, packet, count);
-      memcpy(packet, (void*)&req->macaddr, 8);
+      memcpy(packet, (void*)&macaddr, 8);
       count += 8;
     }
     uv_buf_t buf = { (char*)packet, count };
     uv_udp_send_t *send_req = malloc(sizeof(uv_udp_send_t));
     send_req->data = packet;
     uv_udp_send(send_req, &conn->udp_handle, &buf, 1, address->ai_addr, _helium_send_callback);
-    helium_dbg("subscribed to %" PRIu64 "\n", req->macaddr);
+    helium_dbg("subscribed to %" PRIu64 "\n", macaddr);
     freeaddrinfo(address);
   } else {
+    helium_dbg("Couldn't get device addr");
     free(packet);
   }
 
-  free(req);
+  return 0;
 }
 
 void _helium_do_udp_send(uv_async_t *handle)
@@ -443,7 +470,7 @@ int helium_open(helium_connection_t *conn, const char *proxy_addr, helium_callba
   conn->token_map = NULL;
   conn->subscription_map = NULL;
   uv_async_init(conn->loop, &conn->send_async, _helium_do_udp_send);
-  uv_async_init(conn->loop, &conn->subscribe_async, _helium_do_subscribe);
+  uv_async_init(conn->loop, &conn->subscribe_async, _helium_async_callback);
   uv_async_init(conn->loop, &conn->quit_async, _helium_do_quit);
   uv_timer_init(conn->loop, &conn->subscription_timer);
   conn->subscription_timer.data = conn;
@@ -491,11 +518,13 @@ int helium_open(helium_connection_t *conn, const char *proxy_addr, helium_callba
 
 int helium_subscribe(helium_connection_t *conn, uint64_t macaddr, helium_token_t token)
 {
-  struct helium_subscribe_req_s *req = malloc(sizeof(struct helium_subscribe_req_s));
+  struct helium_request_s *req = malloc(sizeof(struct helium_request_s));
+  
+  req->request_type = SUBSCRIBE_REQUEST;
   req->macaddr = macaddr;
   memcpy(req->token, token, 16);
   req->conn = conn;
-  req->subscribe = 1;
+  req->as.subscribe_request.subscribe = 1;
   conn->subscribe_async.data = req;
   uv_async_send(&conn->subscribe_async);
   return 0;
