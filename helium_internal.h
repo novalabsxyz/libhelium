@@ -10,9 +10,12 @@
  */
 struct helium_connection_s {
   uv_loop_t *loop;
+  // TODO use just one async_t here?
   uv_async_t send_async;
   uv_async_t subscribe_async;
   uv_async_t quit_async;
+  uv_sem_t sem;
+  uv_mutex_t mutex;
   uv_udp_t udp_handle;
   uv_timer_t subscription_timer;
   struct addrinfo connection_address;
@@ -24,6 +27,13 @@ struct helium_connection_s {
 #if HAVE_BLOCKS
   helium_block_t callback_block;
 #endif
+};
+
+struct helium_callback_invocation_s {
+  struct helium_connection_s *conn;
+  char *message;
+  uint64_t mac;
+  int res;
 };
 
 struct helium_mac_token_map {
