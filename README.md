@@ -59,9 +59,9 @@ The `helium_test` executable listens on stdin for lines of the form `<MAC> <toke
 For example:
 
 ```
-./helium_test -p r01.sjc.helium.io
+./helium_test -p r01.foo.example.io
 ...
-00212effff005841 29dcxtSTIsyGFZ6TVcwJ3g== s
+00212effffffffff 29dcxtSTIsyGFZ6Tffffff== s
 ```
 
-will subscribe you to messages from device 00212effff005841 that is being routed through r01.
+will subscribe you to messages from device 00212effffffffff that is being routed through r01.
