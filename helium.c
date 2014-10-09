@@ -252,7 +252,19 @@ void _helium_udp_recv_callback(uv_udp_t *handle, ssize_t nread, const uv_buf_t *
   helium_dbg("decryption result %d\n", res);
   helium_dbg("packet %s\n", out);
 
-  helium_dbg("MAC is %" PRIu64 "\n", macaddr);
+
+  if (macaddr & 0x100000000000000) {
+      // multicast bit is set, this is a group
+      // TODO should we also pass the group MAC to the callback?
+      helium_dbg("message is from a group\n");
+      helium_dbg("Group MAC is %" PRIu64 "\n", macaddr);
+      memcpy((void*)&macaddr, out, 8);
+      res -= 8;
+      memmove(out, out+8, res);
+      out = realloc(out, res);
+  }
+
+  helium_dbg("device MAC is %" PRIu64 "\n", macaddr);
 
   // should we ever call this when nread < 1?
   //conn->callback(conn, macaddr, (char*)out, res);
