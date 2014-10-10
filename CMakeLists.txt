@@ -24,12 +24,21 @@ link_directories(/usr/local/lib)
 find_package(uv)
 find_package(crypto)
 
+IF(BLOCKS AND NOT APPLE)
+find_package(blocksruntime)
+ENDIF(BLOCKS AND NOT APPLE)
+
 IF(ENABLE_TESTS)
   find_package(cunit)
 ENDIF(ENABLE_TESTS)
 
 set(HELIUM_LIBS ${UV_LIBRARIES} ${CRYPTO_LIBRARIES})
 set(HELIUM_INCLUDES ${UV_INCLUDE_DIR} ${CRYPTO_INCLUDE_DIR})
+
+IF(BLOCKS)
+SET(HELIUM_LIBS ${HELIUM_LIBS} ${CBLOCKS_LIBRARIES})
+SET(HELIUM_INCLUDES ${HELIUM_LIBS} ${CBLOCKS_INCLUDE_DIR})
+ENDIF(BLOCKS)
 
 message("Helium libs are ${HELIUM_LIBS}")
 message("Helium includes are ${HELIUM_INCLUDES}")
