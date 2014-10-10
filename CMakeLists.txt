@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 2.8)
 project(libhelium)
+SET(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake-scripts)
 
 include(CheckIncludeFiles)
 
@@ -66,3 +67,5 @@ if (DOXYGEN_FOUND)
   add_custom_target(doc ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile.out WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     COMMENT "Generating API documentation with Doxygen" )
 endif(DOXYGEN_FOUND)
+
+find_package(CMake)
