@@ -21,7 +21,12 @@ link_directories(/usr/local/lib)
 
 find_package(libuv)
 
-check_include_files("stdatomic.h" HAVE_SYS_STDATOMIC)
+set(HELIUM_LIBS ${UV_LIBRARIES})
+set(HELIUM_INCLUDES ${UV_INCLUDE_DIR})
+
+set(HELIUM_SOURCE_FILES
+  logging.c
+  helium.c)
 
 if (APPLE)
   # use homebrew openssl not the system one
@@ -29,7 +34,7 @@ if (APPLE)
   link_directories(/usr/local/opt/openssl/lib)
 endif (APPLE)
 
-add_library(helium STATIC logging.c helium.c)
+add_library(helium STATIC ${HELIUM_SOURCE_FILES})
 # fPIC is needed to link a static lib to a shared object
 set_target_properties(helium PROPERTIES COMPILE_FLAGS "-fPIC")
 
