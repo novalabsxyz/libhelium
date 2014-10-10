@@ -6,6 +6,8 @@ include(CheckIncludeFiles)
 
 # Build with blocks by default. If you don't have clang it'll whine at you.
 option(BLOCKS "BLOCKS" ON)
+# Don't build tests by default
+option(ENABLE_TESTS "ENABLE_TESTS" FALSE)
 
 set(VERSION_MAJOR "0")
 set(VERSION_MINOR "0")
@@ -19,23 +21,27 @@ set(CMAKE_C_FLAGS "-Wall -std=c11 -funsigned-char")
 include_directories(/usr/local/include)
 link_directories(/usr/local/lib)
 
-find_package(libuv)
+find_package(uv)
+find_package(crypto)
 
-set(HELIUM_LIBS ${UV_LIBRARIES})
-set(HELIUM_INCLUDES ${UV_INCLUDE_DIR})
+IF(ENABLE_TESTS)
+  find_package(cunit)
+ENDIF(ENABLE_TESTS)
+
+set(HELIUM_LIBS ${UV_LIBRARIES} ${CRYPTO_LIBRARIES})
+set(HELIUM_INCLUDES ${UV_INCLUDE_DIR} ${CRYPTO_INCLUDE_DIR})
+
+message("Helium libs are ${HELIUM_LIBS}")
+message("Helium includes are ${HELIUM_INCLUDES}")
 
 set(HELIUM_SOURCE_FILES
   logging.c
   helium.c)
 
-if (APPLE)
-  # use homebrew openssl not the system one
-  include_directories(/usr/local/opt/openssl/include)
-  link_directories(/usr/local/opt/openssl/lib)
-endif (APPLE)
-
 add_library(helium STATIC ${HELIUM_SOURCE_FILES})
+
 # fPIC is needed to link a static lib to a shared object
+# TODO: I can't figure out how to use target_compile_options, but we should
 set_target_properties(helium PROPERTIES COMPILE_FLAGS "-fPIC")
 
 add_executable(helium_test test.c)
