@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8)
 project(libhelium)
-SET(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake-scripts)
+set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake-scripts)
 
 include(CheckIncludeFiles)
 
@@ -16,32 +16,27 @@ set(VERSION "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}")
 add_definitions(-DLIBHELIUM_VERSION="${VERSION}")
 add_definitions(-D_GNU_SOURCE) # you need this or libuv will not be happy
 
-set(CMAKE_C_FLAGS "-Wall -std=c11 -funsigned-char")
-
-include_directories(/usr/local/include)
-link_directories(/usr/local/lib)
+set(CMAKE_C_FLAGS "-Wall -std=c11 -funsigned-char -I../")
 
 find_package(uv)
 find_package(crypto)
 
-IF(BLOCKS AND NOT APPLE)
-find_package(blocksruntime)
-ENDIF(BLOCKS AND NOT APPLE)
+if(BLOCKS AND NOT APPLE)
+  find_package(blocksruntime)
+endif(BLOCKS AND NOT APPLE)
 
-IF(ENABLE_TESTS)
+if(ENABLE_TESTS)
   find_package(cunit)
-ENDIF(ENABLE_TESTS)
-
-set(HELIUM_LIBS ${UV_LIBRARIES} ${CRYPTO_LIBRARIES})
-set(HELIUM_INCLUDES ${UV_INCLUDE_DIR} ${CRYPTO_INCLUDE_DIR})
+endif(ENABLE_TESTS)
 
 IF(BLOCKS)
-SET(HELIUM_LIBS ${HELIUM_LIBS} ${CBLOCKS_LIBRARIES})
-SET(HELIUM_INCLUDES ${HELIUM_LIBS} ${CBLOCKS_INCLUDE_DIR})
+  SET(HELIUM_LIBS ${HELIUM_LIBS} ${CBLOCKS_LIBRARIES})
+  SET(HELIUM_INCLUDES ${HELIUM_LIBS} ${CBLOCKS_INCLUDE_DIR})
+  SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fblocks")
 ENDIF(BLOCKS)
 
-message("Helium libs are ${HELIUM_LIBS}")
-message("Helium includes are ${HELIUM_INCLUDES}")
+include_directories(${HELIUM_INCLUDES})
+link_directories(${HELIUM_LIBS})
 
 set(HELIUM_SOURCE_FILES
   logging.c
@@ -91,4 +86,3 @@ if (DOXYGEN_FOUND)
     COMMENT "Generating API documentation with Doxygen" )
 endif(DOXYGEN_FOUND)
 
-find_package(CMake)
