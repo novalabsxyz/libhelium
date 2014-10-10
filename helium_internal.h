@@ -30,6 +30,7 @@ struct helium_mac_token_map {
 typedef enum {
   SEND_REQUEST = 0,
   SUBSCRIBE_REQUEST,
+  UNSUBSCRIBE_REQUEST,
   QUIT_REQUEST
 } helium_request_type_t;
 
@@ -38,16 +39,10 @@ struct helium_request_s {
   helium_connection_t *conn;
   uint64_t macaddr;
   helium_token_t token;
-  union {
-    struct {
-      unsigned char *message;
-      size_t count;
-    } send_request;
-
-    struct {
-      unsigned char subscribe; // currently unused, but we'll use this for unsubscribe
-    } subscribe_request;
-  } as;
+  
+  // NULL if a subscribe, unsubscribe, or quit request
+  unsigned char *message;
+  size_t count;
 };
 
 int _handle_send_request(helium_connection_t *conn,
@@ -58,7 +53,6 @@ int _handle_send_request(helium_connection_t *conn,
 
 int _handle_subscribe_request(helium_connection_t *conn,
                               uint64_t macaddr,
-                              helium_token_t token,
-                              unsigned char subscribe);
+                              helium_token_t token);
 
 int _handle_quit(helium_connection_t *conn);

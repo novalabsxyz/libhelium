@@ -180,11 +180,13 @@ void _helium_async_callback(uv_async_t *async)
 
   switch (request->request_type) {
   case SUBSCRIBE_REQUEST:
-    result = _handle_subscribe_request(conn, macaddr, request->token, request->as.subscribe_request.subscribe);
+    result = _handle_subscribe_request(conn, macaddr, request->token);
   case SEND_REQUEST:
-    result = _handle_send_request(conn, macaddr, request->token, request->as.send_request.message, request->as.send_request.count);
+    result = _handle_send_request(conn, macaddr, request->token, request->message, request->count);
   case QUIT_REQUEST:
     result = _handle_quit(conn);
+  case UNSUBSCRIBE_REQUEST:
+    break; // currently not implemented
   }
 
   if (result != 0) {
@@ -326,8 +328,7 @@ int _handle_quit(helium_connection_t *conn)
 
 int _handle_subscribe_request(helium_connection_t *conn,
                               uint64_t macaddr,
-                              helium_token_t token,
-                              unsigned char subscribe)
+                              helium_token_t token)
 {
     // keep track of the token, so we can decrypt replies
   struct helium_mac_token_map *entry = malloc(sizeof(struct helium_mac_token_map));
@@ -508,7 +509,6 @@ int helium_subscribe(helium_connection_t *conn, uint64_t macaddr, helium_token_t
   req->macaddr = macaddr;
   memcpy(req->token, token, 16);
   req->conn = conn;
-  req->as.subscribe_request.subscribe = 1;
   conn->async_handle.data = req;
   uv_async_send(&conn->async_handle);
   return 0;
@@ -547,8 +547,8 @@ int helium_send(helium_connection_t *conn, uint64_t macaddr, helium_token_t toke
   req->macaddr = macaddr;
   memcpy(req->token, token, 16);
   
-  req->as.send_request.message = packet;
-  req->as.send_request.count = count;
+  req->message = packet;
+  req->count = count;
   req->conn = conn;
   conn->async_handle.data = (void*)req;
   uv_async_send(&conn->async_handle);
