@@ -45,8 +45,8 @@ IF(BLOCKS)
 ENDIF(BLOCKS)
 
 set(HELIUM_SOURCE_FILES
-  logging.c
-  helium.c)
+  src/logging.c
+  src/helium.c)
 
 set(HELIUM_HEADER_FILES
   include/logging.h
