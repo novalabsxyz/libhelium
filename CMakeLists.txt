@@ -49,7 +49,7 @@ set(HELIUM_SOURCE_FILES
   src/helium.c)
 
 set(HELIUM_HEADER_FILES
-  include/logging.h
+  include/helium_logging.h
   include/helium.h)
 
 

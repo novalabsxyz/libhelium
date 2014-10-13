@@ -10,7 +10,7 @@
 #include <openssl/sha.h>
 
 #include "helium_internal.h"
-#include "logging.h"
+#include "helium_logging.h"
 
 uv_loop_t __helium_default_loop;
 uv_thread_t __helium_loop_runner_thread;
