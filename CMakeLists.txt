@@ -73,8 +73,6 @@ target_compile_options(helium PUBLIC "-fPIC")
 install(TARGETS helium DESTINATION lib)
 install(FILES ${HELIUM_HEADER_FILES} DESTINATION include)
 
-if (NOT APPLE)
-
 add_executable(shell samples/shell.c)
 target_include_directories(shell PUBLIC ${PROJECT_SOURCE_DIR}/include ${HELIUM_INCLUDES})
 target_link_libraries(shell PUBLIC libhelium.a ${HELIUM_LIBS})
@@ -83,8 +81,6 @@ add_executable(multiloop_test samples/multiloop_test.c)
 target_include_directories(multiloop_test PUBLIC ${HELIUM_INCLUDES})
 set(HELIUM_LIBS ${CMAKE_CURRENT_BINARY_DIR}/libhelium.a ${HELIUM_LIBS})
 target_link_libraries(multiloop_test PUBLIC ${HELIUM_LIBS})
-
-endif(NOT APPLE)
 
 find_package(Doxygen)
 if (DOXYGEN_FOUND)

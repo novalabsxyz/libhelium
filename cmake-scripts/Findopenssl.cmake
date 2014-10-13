@@ -4,9 +4,14 @@ IF(APPLE)
     PATHS /usr/local/opt/openssl/include
     NO_DEFAULT_PATH)
   FIND_LIBRARY(OPENSSL_LIBRARIES
-    NAMES ssl libssl
-    usr/local/opt/openssl
-    NO_DEFAULT_PATH)
+    NAMES ssl
+    PATHS /usr/local/opt/openssl/lib
+    NO_DEFAULT_PATH
+    NO_CMAKE_ENVIRONMENT_PATH
+    NO_CMAKE_PATH
+    NO_SYSTEM_ENVIRONMENT_PATH
+    NO_CMAKE_SYSTEM_PATH
+    CMAKE_FIND_FRAMEWORK NEVER)
 ELSE()
   FIND_PATH(OPENSSL_INCLUDE_DIR NAMES openssl/ssl.h)
   FIND_LIBRARY(OPENSSL_LIBRARIES NAMES ssl libssl)
