@@ -203,6 +203,20 @@ void _helium_buffer_alloc_callback(uv_handle_t *handle, size_t suggested, uv_buf
   *dst = uv_buf_init(chunk, suggested);
 }
 
+void _helium_run_callback(uv_work_t *req) {
+
+  struct helium_callback_invocation_s *inc = req->data;
+  helium_connection_t *conn = (helium_connection_t *)inc->conn;
+  conn->callback(conn, inc->mac, inc->message, inc->res);
+}
+
+void _helium_after_callback(uv_work_t *req, int status) {
+  struct helium_callback_invocation_s *inc = req->data;
+  free(inc->message);
+  free(inc);
+  free(req);
+}
+
 void _helium_udp_recv_callback(uv_udp_t *handle, ssize_t nread, const uv_buf_t *buf, const struct sockaddr *addr, unsigned int flags)
 {
   if (nread == 0) {
@@ -251,11 +265,31 @@ void _helium_udp_recv_callback(uv_udp_t *handle, ssize_t nread, const uv_buf_t *
   helium_dbg("decryption result %d\n", res);
   helium_dbg("packet %s\n", out);
 
-  helium_dbg("MAC is %" PRIu64 "\n", macaddr);
+
+  if (macaddr & 0x100000000000000) {
+      // multicast bit is set, this is a group
+      // TODO should we also pass the group MAC to the callback?
+      helium_dbg("message is from a group\n");
+      helium_dbg("Group MAC is %" PRIu64 "\n", macaddr);
+      memcpy((void*)&macaddr, out, 8);
+      res -= 8;
+      memmove(out, out+8, res);
+      out = realloc(out, res);
+  }
+
+  helium_dbg("device MAC is %" PRIu64 "\n", macaddr);
 
   // should we ever call this when nread < 1?
-  conn->callback(conn, macaddr, (char*)out, res);
-  free(out);
+  //conn->callback(conn, macaddr, (char*)out, res);
+  uv_work_t *req = malloc(sizeof(uv_work_t));
+  struct helium_callback_invocation_s *inc = malloc(sizeof(struct helium_callback_invocation_s));
+  inc->conn = conn;
+  inc->mac = macaddr;
+  inc->res = res;
+  inc->message = (char*)out;
+  req->data = inc;
+  uv_queue_work(conn->loop, req, _helium_run_callback, _helium_after_callback);
+  //free(out);
   free(buf->base);
 
 }
@@ -323,6 +357,8 @@ int _handle_quit(helium_connection_t *conn)
   uv_unref((uv_handle_t*)&conn->subscription_timer);
   uv_unref((uv_handle_t*)&conn->async_handle);
 
+  uv_sem_post(&conn->sem);
+  
   return 0;
 }
 
@@ -371,6 +407,8 @@ int _handle_subscribe_request(helium_connection_t *conn,
     free(packet);
   }
 
+  uv_sem_post(&conn->sem);
+  
   return 0;
 }
 
@@ -409,6 +447,8 @@ int _handle_send_request(helium_connection_t *conn,
   send_req->data = message;
   uv_udp_send(send_req, &conn->udp_handle, &buf, 1, address->ai_addr, _helium_send_callback);
   freeaddrinfo(address);
+
+  uv_sem_post(&conn->sem);
 
   return 0;
 }
@@ -449,6 +489,9 @@ void helium_free(helium_connection_t *conn)
     free(iter2);
   }
 
+  uv_sem_destroy(&conn->sem);
+  uv_mutex_destroy(&conn->mutex);
+
   free(conn);
 }
 
@@ -458,6 +501,8 @@ int helium_open(helium_connection_t *conn, const char *proxy_addr, helium_callba
   conn->subscription_map = NULL;
   uv_async_init(conn->loop, &conn->async_handle, _helium_async_callback);
   uv_timer_init(conn->loop, &conn->subscription_timer);
+  uv_sem_init(&conn->sem, 0);
+  uv_mutex_init(&conn->mutex);
   conn->subscription_timer.data = conn;
   uv_timer_start(&conn->subscription_timer, _helium_refresh_subscriptions, 30000, 30000);
   int err = uv_udp_init(conn->loop, &conn->udp_handle);
@@ -509,8 +554,13 @@ int helium_subscribe(helium_connection_t *conn, uint64_t macaddr, helium_token_t
   req->macaddr = macaddr;
   memcpy(req->token, token, 16);
   req->conn = conn;
+  uv_mutex_lock(&conn->mutex);
+
   conn->async_handle.data = req;
   uv_async_send(&conn->async_handle);
+  // wait for the event loop to call sem_post on this semaphore
+  uv_sem_wait(&conn->sem);
+  uv_mutex_unlock(&conn->mutex);
   return 0;
 }
 
@@ -550,22 +600,34 @@ int helium_send(helium_connection_t *conn, uint64_t macaddr, helium_token_t toke
   req->message = packet;
   req->count = count;
   req->conn = conn;
+
+
+  uv_mutex_lock(&conn->mutex);
+
   conn->async_handle.data = (void*)req;
   uv_async_send(&conn->async_handle);
-  // TODO we should also pass our own async message thing and have our own libuv loop so we can stall here waiting for the reply
+
+  // wait for the event loop to call sem_post on this semaphore
+  uv_sem_wait(&conn->sem);
+  uv_mutex_unlock(&conn->mutex);
 
   return 0;
 }
 
 int helium_close(helium_connection_t *conn)
 {
-  free(conn->proxy_addr);
   struct helium_request_s *request = calloc(1, sizeof(struct helium_request_s));
   request->conn = conn;
   request->request_type = QUIT_REQUEST;
   
+  uv_mutex_lock(&conn->mutex);
   conn->async_handle.data = request;
   uv_async_send(&conn->async_handle);
+  // wait for the event loop to call sem_post on this semaphore
+  uv_sem_wait(&conn->sem);
+  uv_mutex_unlock(&conn->mutex);
+
+  free(conn->proxy_addr);
 
   return 0;
 }
