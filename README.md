@@ -24,12 +24,12 @@ helium_subscribe(conn, 0x0000112233440001, "magic_helium_token");
 requirements
 ============
 
-libhelium depends on [libuv](https://github.com/joyent/libuv) (>= 0.11.29) for cross-platform network functionality.
+libhelium depends on [libuv](https://github.com/joyent/libuv) (>= 0.11.29) for cross-platform network functionality and OpenSSL (>= 1.0.1) for required cipher suites. Optional unit test infrastructure is provided by [cunit](http://cunit.sourceforge.net).
 
 
 ## OS X
 
-You'll need cmake, libuv and libcrypto (a newer one than the system OS X). Assuming you have [Homebrew](http://brew.sh) installed:
+You'll need cmake, libuv and openssl (please note that the OpenSSL included with Darwin will *not* work). Assuming you have [Homebrew](http://brew.sh) installed:
 
 ```
 brew install cmake
