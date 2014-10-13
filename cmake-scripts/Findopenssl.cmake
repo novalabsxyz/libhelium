@@ -1,10 +1,16 @@
-FIND_PATH(OPENSSL_INCLUDE_DIR
-  NAMES openssl/ssl.h
-  PATHS /usr/local/opt/openssl/include
-  NO_DEFAULT_PATH)
-FIND_LIBRARY(OPENSSL_LIBRARIES
-  usr/local/opt/openssl
-  NO_DEFAULT_PATH)
+IF(APPLE)
+  FIND_PATH(OPENSSL_INCLUDE_DIR
+    NAMES openssl/ssl.h
+    PATHS /usr/local/opt/openssl/include
+    NO_DEFAULT_PATH)
+  FIND_LIBRARY(OPENSSL_LIBRARIES
+    NAMES ssl libssl
+    usr/local/opt/openssl
+    NO_DEFAULT_PATH)
+ELSE()
+  FIND_PATH(OPENSSL_INCLUDE_DIR NAMES openssl/ssl.h)
+  FIND_LIBRARY(OPENSSL_LIBRARIES NAMES ssl libssl)
+ENDIF(APPLE)
 
 INCLUDE(FindPackageHandleStandardArgs)
 Find_package_handle_standard_args(SSL DEFAULT_MSG OPENSSL_LIBRARIES OPENSSL_INCLUDE_DIR)
