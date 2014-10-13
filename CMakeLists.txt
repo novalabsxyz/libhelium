@@ -73,14 +73,27 @@ target_compile_options(helium PUBLIC "-fPIC")
 install(TARGETS helium DESTINATION lib)
 install(FILES ${HELIUM_HEADER_FILES} DESTINATION include)
 
+set(SAMPLE_INCLUDES
+  ${PROJECT_SOURCE_DIR}/include
+  ${OPENSSL_INCLUDE_DIR}
+  ${UV_INCLUDE_DIR}
+  ${CRYPTO_INCLUDE_DIR})
+
+set(SAMPLE_LIBRARIES
+  ${CMAKE_CURRENT_BINARY_DIR}/libhelium.a
+  ${OPENSSL_LIBRARIES}
+  ${UV_LIBRARIES}
+  ${CRYPTO_LIBRARIES})
+
 add_executable(shell samples/shell.c)
-target_include_directories(shell PUBLIC ${PROJECT_SOURCE_DIR}/include ${HELIUM_INCLUDES})
-target_link_libraries(shell PUBLIC libhelium.a ${HELIUM_LIBS})
+add_dependencies(shell helium)
+target_include_directories(shell PUBLIC ${SAMPLE_INCLUDES})
+target_link_libraries(shell PUBLIC ${SAMPLE_LIBRARIES})
 
 add_executable(multiloop_test samples/multiloop_test.c)
-target_include_directories(multiloop_test PUBLIC ${HELIUM_INCLUDES})
-set(HELIUM_LIBS ${CMAKE_CURRENT_BINARY_DIR}/libhelium.a ${HELIUM_LIBS})
-target_link_libraries(multiloop_test PUBLIC ${HELIUM_LIBS})
+add_dependencies(multiloop_test helium)
+target_include_directories(multiloop_test PUBLIC ${SAMPLE_INCLUDES})
+target_link_libraries(multiloop_test PUBLIC ${SAMPLE_LIBRARIES})
 
 find_package(Doxygen)
 if (DOXYGEN_FOUND)
