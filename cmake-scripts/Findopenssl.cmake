@@ -18,7 +18,9 @@ else( OPENSSL_INCLUDE_DIRECTORIES AND OPENSSL_LIBRARIES )
   find_path(OPENSSL_INCLUDE_DIRECTORIES
     NAMES
       ssl.h
-    PATHS
+      PATHS
+      /usr/local/opt/openssl/include
+      /usr/local/opt/openssl/include/openssl
       /usr/include
       /usr/include/openssl
       /usr/local/include
@@ -38,7 +40,9 @@ else( OPENSSL_INCLUDE_DIRECTORIES AND OPENSSL_LIBRARIES )
     NAMES
       ssleay32
       ssl
-    PATHS
+      PATHS
+      /usr/local/opt/openssl/lib
+      /usr/local/opt/openssl/lib/ssl
       /usr/lib
       /usr/lib/ssl
       /usr/local/lib
