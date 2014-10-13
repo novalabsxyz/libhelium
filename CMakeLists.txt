@@ -35,8 +35,8 @@ set(HELIUM_INCLUDES
   ${CMAKE_CURRENT_BINARY_DIR}/include/
 )
 
-set(HELIUM_LIBS ${HELIUM_LIBS} ${UV_LIBRARIES} ${CRYPTO_LIBRARIES} ${OPENSSL_LIBRARIES})
-set(HELIUM_INCLUDES ${HELIUM_INCLUDES} ${UV_INCLUDE_DIR} ${CRYPTO_INCLUDE_DIR} ${OPENSSL_INCLUDE_DIR})
+set(HELIUM_LIBS ${OPENSSL_LIBRARIES} ${HELIUM_LIBS} ${UV_LIBRARIES} ${CRYPTO_LIBRARIES} )
+set(HELIUM_INCLUDES ${OPENSSL_INCLUDE_DIR} ${HELIUM_INCLUDES} ${UV_INCLUDE_DIR} ${CRYPTO_INCLUDE_DIR} )
 
 if(BLOCKS)
   set(HELIUM_LIBS ${HELIUM_LIBS} ${CBLOCKS_LIBRARIES})
@@ -52,6 +52,7 @@ set(HELIUM_HEADER_FILES
   include/logging.h
   include/helium.h)
 
+
 if(CMAKE_C_COMPILER_ID MATCHES "clang")
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fblocks -fsanitize=undefined")
   add_definitions(-DHAVE_BLOCKS=1)
@@ -62,7 +63,7 @@ endif(CMAKE_C_COMPILER_ID MATCHES "clang")
 message("HELIUM_INCLUDES are ${HELIUM_INCLUDES}")
 message("HELIUM_LIBS ARE ${HELIUM_LIBS}")
 
-add_library(helium SHARED ${HELIUM_SOURCE_FILES})
+add_library(helium STATIC ${HELIUM_SOURCE_FILES})
 target_include_directories(helium PUBLIC ${HELIUM_INCLUDES})
 target_link_libraries(helium PUBLIC ${HELIUM_LIBS})
 
@@ -72,13 +73,18 @@ target_compile_options(helium PUBLIC "-fPIC")
 install(TARGETS helium DESTINATION lib)
 install(FILES ${HELIUM_HEADER_FILES} DESTINATION include)
 
+if (NOT APPLE)
+
 add_executable(shell samples/shell.c)
-target_include_directories(shell PUBLIC ${PROJECT_SOURCE_DIR}/include)
+target_include_directories(shell PUBLIC ${PROJECT_SOURCE_DIR}/include ${HELIUM_INCLUDES})
 target_link_libraries(shell PUBLIC libhelium.a ${HELIUM_LIBS})
 
 add_executable(multiloop_test samples/multiloop_test.c)
-target_include_directories(multiloop_test PUBLIC ${PROJECT_SOURCE_DIR}/include)
-target_link_libraries(multiloop_test PUBLIC libhelium.a ${HELIUM_LIBS})
+target_include_directories(multiloop_test PUBLIC ${HELIUM_INCLUDES})
+set(HELIUM_LIBS ${CMAKE_CURRENT_BINARY_DIR}/libhelium.a ${HELIUM_LIBS})
+target_link_libraries(multiloop_test PUBLIC ${HELIUM_LIBS})
+
+endif(NOT APPLE)
 
 find_package(Doxygen)
 if (DOXYGEN_FOUND)
