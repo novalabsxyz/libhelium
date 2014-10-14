@@ -60,6 +60,10 @@ helium_connection_t *helium_alloc(uv_loop_t *loop) __attribute__((malloc));
 
 /**
    @brief Frees a previously-allocation libhelium connection.
+
+   @param conn The connection to free.
+
+   If `conn` is `NULL`, this function has no effect.
 */
 void helium_free(helium_connection_t *conn);
 

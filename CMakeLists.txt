@@ -52,6 +52,8 @@ set(HELIUM_HEADER_FILES
   include/helium_logging.h
   include/helium.h)
 
+set(HELIUM_TEST_FILES
+  tests/test_open_close.c)
 
 if(CMAKE_C_COMPILER_ID MATCHES "clang")
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fblocks -fsanitize=undefined")
@@ -85,6 +87,10 @@ set(SAMPLE_LIBRARIES
   ${UV_LIBRARIES}
   ${CRYPTO_LIBRARIES})
 
+set(TEST_LIBRARIES
+  ${CUNIT_LIBRARY}
+  ${SAMPLE_LIBRARIES})
+
 add_executable(shell samples/shell.c)
 add_dependencies(shell helium)
 target_include_directories(shell PUBLIC ${SAMPLE_INCLUDES})
@@ -95,10 +101,17 @@ add_dependencies(multiloop_test helium)
 target_include_directories(multiloop_test PUBLIC ${SAMPLE_INCLUDES})
 target_link_libraries(multiloop_test PUBLIC ${SAMPLE_LIBRARIES})
 
+enable_testing()
+add_executable(test_suite ${HELIUM_TEST_FILES})
+add_dependencies(test_suite helium)
+target_include_directories(test_suite PUBLIC ${SAMPLE_INCLUDES})
+target_link_libraries(test_suite PUBLIC ${TEST_LIBRARIES})
+add_test(test_on_and_off test_suite)
+
 find_package(Doxygen)
 if (DOXYGEN_FOUND)
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile.out @ONLY)
-  add_custom_target(doc ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile.out WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+  add_custom_target(doc ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile.out WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include
     COMMENT "Generating API documentation with Doxygen" )
 endif(DOXYGEN_FOUND)
 
