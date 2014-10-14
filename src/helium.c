@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
+#include <syslog.h>
 
 // crypto stuff
 #include <openssl/rand.h>
@@ -10,7 +11,6 @@
 #include <openssl/sha.h>
 
 #include "helium_internal.h"
-#include "helium_logging.h"
 
 uv_loop_t __helium_default_loop;
 uv_thread_t __helium_loop_runner_thread;
@@ -19,6 +19,20 @@ uv_idle_t __helium_loop_idler;
 const char *libhelium_version()
 {
   return LIBHELIUM_VERSION;
+}
+
+void helium_log(int priority, const char *format, ...)
+{
+  va_list args;
+  va_start(args, format);
+  vsyslog(priority, format, args);
+}
+
+void helium_dbg(const char *format, ...)
+{
+  va_list args;
+  va_start(args, format);
+  vsyslog(LOG_DEBUG, format, args);
 }
 
 // invoked via __helium_loop_runner_thread

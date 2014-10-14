@@ -45,7 +45,6 @@ if(BLOCKS AND BLOCKS_FOUND)
 endif(BLOCKS AND BLOCKS_FOUND)
 
 set(HELIUM_SOURCE_FILES
-  src/logging.c
   src/helium.c)
 
 set(HELIUM_HEADER_FILES
