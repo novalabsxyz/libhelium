@@ -1,31 +1,33 @@
 #include <stdio.h>
 #include <string.h>
 #include <inttypes.h>
+#include <syslog.h>
 
 #include <openssl/evp.h>
 #include <openssl/bio.h>
 
 #include "helium.h"
-#include "helium_logging.h"
 
 void test_callback(const helium_connection_t *conn, uint64_t sender_mac, char * const message, size_t count)
 {
-  helium_dbg("1 Function-pointer callback got %s %zd\n", message, count);
-  helium_dbg("1 Mac address is %" PRIu64 "\n", sender_mac);
+  syslog(LOG_USER, "1 Function-pointer callback got %s %zd\n", message, count);
+  syslog(LOG_USER, "1 Mac address is %" PRIu64 "\n", sender_mac);
 }
 
 void test_callback2(const helium_connection_t *conn, uint64_t sender_mac, char * const message, size_t count)
 {
-  helium_dbg("2 Function-pointer callback got %s %zd\n", message, count);
-  helium_dbg("2 Mac address is %" PRIu64 "\n", sender_mac);
+  syslog(LOG_USER, "2 Function-pointer callback got %s %zd\n", message, count);
+  syslog(LOG_USER, "2 Mac address is %" PRIu64 "\n", sender_mac);
 }
 
 int main(int argc, char *argv[])
 {
+  openlog("libhelium", LOG_PERROR | LOG_NDELAY | LOG_PID, LOG_USER);
+  atexit(closelog);
+  
   uv_loop_t my_loop;
   uv_loop_init(&my_loop);
   
-  helium_logging_start();
   char *proxy = NULL;
 
   helium_connection_t *conn2 = helium_alloc(NULL);
