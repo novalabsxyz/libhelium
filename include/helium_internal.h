@@ -14,7 +14,6 @@ struct helium_connection_s {
   
   uv_udp_t udp_handle;
   uv_timer_t subscription_timer;
-  struct addrinfo connection_address;
   char *proxy_addr;
   helium_callback_t callback;
   void *context;
