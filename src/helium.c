@@ -12,19 +12,19 @@
 #include "helium_internal.h"
 #include "helium_logging.h"
 
-uv_loop_t __helium_default_loop;
-uv_thread_t __helium_loop_runner_thread;
-uv_idle_t __helium_loop_idler;
+uv_loop_t __default_loop;
+uv_thread_t __loop_runner_thread;
+uv_idle_t __loop_idler;
 
 const char *libhelium_version()
 {
   return LIBHELIUM_VERSION;
 }
 
-// invoked via __helium_loop_runner_thread
+// invoked via __loop_runner_thread
 void _run_default_loop(void *unused)
 {
-  uv_run(&__helium_default_loop, UV_RUN_DEFAULT);
+  uv_run(&__default_loop, UV_RUN_DEFAULT);
 }
 
 // invoked by atexit(3)
@@ -32,13 +32,13 @@ void _teardown_default_loop(void)
 {
 
   // Kill the idling process
-  uv_idle_stop(&__helium_loop_idler);
+  uv_idle_stop(&__loop_idler);
 
   // And the loop
-  uv_stop(&__helium_default_loop);
-  uv_loop_close(&__helium_default_loop);
+  uv_stop(&__default_loop);
+  uv_loop_close(&__default_loop);
 
-  uv_thread_join(&__helium_loop_runner_thread);
+  uv_thread_join(&__loop_runner_thread);
 }
 
 void _do_nothing(uv_idle_t *unused)
@@ -48,10 +48,10 @@ void _do_nothing(uv_idle_t *unused)
 
 void _start_default_loop(void)
 {
-  uv_loop_init(&__helium_default_loop);
-  uv_idle_init(&__helium_default_loop, &__helium_loop_idler);
-  uv_idle_start(&__helium_loop_idler, _do_nothing);
-  uv_thread_create(&__helium_loop_runner_thread, _run_default_loop, NULL);
+  uv_loop_init(&__default_loop);
+  uv_idle_init(&__default_loop, &__loop_idler);
+  uv_idle_start(&__loop_idler, _do_nothing);
+  uv_thread_create(&__loop_runner_thread, _run_default_loop, NULL);
   atexit(_teardown_default_loop);
 }
 
@@ -61,7 +61,7 @@ uv_loop_t *helium_default_loop(void)
   uv_once(&once, _start_default_loop);
   printf("Helium struct is %ld bytes\n", sizeof(helium_connection_t));
 
-  return &__helium_default_loop;
+  return &__default_loop;
 }
 
 // encrypt a message into a packet
@@ -140,7 +140,7 @@ int libhelium_decrypt_packet(const unsigned char *token, const unsigned char *pa
   return outlen;
 }
 
-int _helium_getdeviceaddr(uint64_t macaddr, char *proxy, struct addrinfo **address) {
+int _getdeviceaddr(uint64_t macaddr, char *proxy, struct addrinfo **address) {
   char *target;
   struct addrinfo hints = {AF_UNSPEC, SOCK_DGRAM, 0, 0};
   if (proxy == NULL) {
@@ -166,7 +166,7 @@ int _helium_getdeviceaddr(uint64_t macaddr, char *proxy, struct addrinfo **addre
   return err;
 }
 
-void _helium_async_callback(uv_async_t *async)
+void _async_callback(uv_async_t *async)
 {
   helium_dbg("In async callback");
   struct helium_request_s *request = (struct helium_request_s *)async->data;
@@ -199,7 +199,7 @@ void _helium_async_callback(uv_async_t *async)
   }
 }
 
-void _helium_buffer_alloc_callback(uv_handle_t *handle, size_t suggested, uv_buf_t *dst)
+void _buffer_alloc_callback(uv_handle_t *handle, size_t suggested, uv_buf_t *dst)
 {
   char *chunk = malloc(suggested);
   helium_dbg("in allocate, allocating %zd bytes into pointer %p", suggested, chunk);
@@ -208,21 +208,21 @@ void _helium_buffer_alloc_callback(uv_handle_t *handle, size_t suggested, uv_buf
   *dst = uv_buf_init(chunk, suggested);
 }
 
-void _helium_run_callback(uv_work_t *req) {
+void _run_callback(uv_work_t *req) {
 
   struct helium_callback_invocation_s *inc = req->data;
   helium_connection_t *conn = (helium_connection_t *)inc->conn;
   conn->callback(conn, inc->mac, inc->message, inc->res);
 }
 
-void _helium_after_callback(uv_work_t *req, int status) {
+void _after_callback(uv_work_t *req, int status) {
   struct helium_callback_invocation_s *inc = req->data;
   free(inc->message);
   free(inc);
   free(req);
 }
 
-void _helium_udp_recv_callback(uv_udp_t *handle, ssize_t nread, const uv_buf_t *buf, const struct sockaddr *addr, unsigned int flags)
+void _udp_recv_callback(uv_udp_t *handle, ssize_t nread, const uv_buf_t *buf, const struct sockaddr *addr, unsigned int flags)
 {
   if (nread == 0) {
     free(buf->base);
@@ -293,20 +293,20 @@ void _helium_udp_recv_callback(uv_udp_t *handle, ssize_t nread, const uv_buf_t *
   inc->res = res;
   inc->message = (char*)out;
   req->data = inc;
-  uv_queue_work(conn->loop, req, _helium_run_callback, _helium_after_callback);
+  uv_queue_work(conn->loop, req, _run_callback, _after_callback);
   //free(out);
   free(buf->base);
 
 }
 
 #if HAVE_BLOCKS
-void _helium_block_callback(const helium_connection_t *conn, uint64_t sender_mac, char * const message, size_t count)
+void _block_callback(const helium_connection_t *conn, uint64_t sender_mac, char * const message, size_t count)
 {
   conn->callback_block(conn, sender_mac, message, count);
 }
 #endif
 
-void _helium_send_callback(uv_udp_send_t *req, int status)
+void _send_callback(uv_udp_send_t *req, int status)
 {
 
   helium_dbg("In send callback, sent %d\n", status);
@@ -316,7 +316,7 @@ void _helium_send_callback(uv_udp_send_t *req, int status)
   }
 }
 
-void _helium_refresh_subscriptions(uv_timer_t *handle) {
+void _refresh_subscriptions(uv_timer_t *handle) {
   helium_connection_t *conn = handle->data;
   helium_dbg("subscription refresh timer fired\n");
   struct helium_mac_token_map *s;
@@ -331,7 +331,7 @@ void _helium_refresh_subscriptions(uv_timer_t *handle) {
       helium_dbg("failed to encrypt re-subscription packet for %" PRIu64 "\n", s->mac);
       continue;
     }
-    err = _helium_getdeviceaddr(s->mac, conn->proxy_addr, &address);
+    err = _getdeviceaddr(s->mac, conn->proxy_addr, &address);
     if (err == 0) {
       if (conn->proxy_addr != NULL) {
         // make room for prefixing the MAC onto the packet
@@ -343,7 +343,7 @@ void _helium_refresh_subscriptions(uv_timer_t *handle) {
       uv_buf_t buf = { (char*)packet, count };
       uv_udp_send_t *send_req = malloc(sizeof(uv_udp_send_t));
       send_req->data = packet;
-      uv_udp_send(send_req, &conn->udp_handle, &buf, 1, address->ai_addr, _helium_send_callback);
+      uv_udp_send(send_req, &conn->udp_handle, &buf, 1, address->ai_addr, _send_callback);
       helium_dbg("resubscribed to %" PRIu64 "\n", s->mac);
       freeaddrinfo(address);
     } else {
@@ -390,7 +390,7 @@ int _handle_subscribe_request(helium_connection_t *conn,
     return -1;
   }
   
-  err = _helium_getdeviceaddr(macaddr, conn->proxy_addr, &address);
+  err = _getdeviceaddr(macaddr, conn->proxy_addr, &address);
   if (err == 0) {
     if (conn->proxy_addr != NULL) {
       // make room for prefixing the MAC onto the packet
@@ -402,7 +402,7 @@ int _handle_subscribe_request(helium_connection_t *conn,
     uv_buf_t buf = { (char*)packet, count };
     uv_udp_send_t *send_req = malloc(sizeof(uv_udp_send_t));
     send_req->data = packet;
-    uv_udp_send(send_req, &conn->udp_handle, &buf, 1, address->ai_addr, _helium_send_callback);
+    uv_udp_send(send_req, &conn->udp_handle, &buf, 1, address->ai_addr, _send_callback);
     helium_dbg("subscribed to %" PRIu64 "\n", macaddr);
     freeaddrinfo(address);
   } else {
@@ -429,7 +429,7 @@ int _handle_send_request(helium_connection_t *conn,
   free(old); // no-op if old == NULL, otherwise frees the old entry
 
   struct addrinfo *address = NULL;
-  int err = _helium_getdeviceaddr(macaddr, conn->proxy_addr, &address);
+  int err = _getdeviceaddr(macaddr, conn->proxy_addr, &address);
 
   if (err != 0) {
     return err;
@@ -446,7 +446,7 @@ int _handle_send_request(helium_connection_t *conn,
   uv_buf_t buf = { (char *)message, count };
   uv_udp_send_t *send_req = malloc(sizeof(uv_udp_send_t));
   send_req->data = message;
-  uv_udp_send(send_req, &conn->udp_handle, &buf, 1, address->ai_addr, _helium_send_callback);
+  uv_udp_send(send_req, &conn->udp_handle, &buf, 1, address->ai_addr, _send_callback);
   freeaddrinfo(address);
 
   return 0;
@@ -498,12 +498,12 @@ int helium_open(helium_connection_t *conn, const char *proxy_addr, helium_callba
 {
   conn->token_map = NULL;
   conn->subscription_map = NULL;
-  uv_async_init(conn->loop, &conn->async_handle, _helium_async_callback);
+  uv_async_init(conn->loop, &conn->async_handle, _async_callback);
   uv_timer_init(conn->loop, &conn->subscription_timer);
   uv_sem_init(&conn->sem, 0);
   uv_mutex_init(&conn->mutex);
   conn->subscription_timer.data = conn;
-  uv_timer_start(&conn->subscription_timer, _helium_refresh_subscriptions, 30000, 30000);
+  uv_timer_start(&conn->subscription_timer, _refresh_subscriptions, 30000, 30000);
   int err = uv_udp_init(conn->loop, &conn->udp_handle);
 
   if (err) {
@@ -537,7 +537,7 @@ int helium_open(helium_connection_t *conn, const char *proxy_addr, helium_callba
     strcpy(conn->proxy_addr, proxy_addr);
   }
 
-  err = uv_udp_recv_start(&conn->udp_handle, _helium_buffer_alloc_callback, _helium_udp_recv_callback);
+  err = uv_udp_recv_start(&conn->udp_handle, _buffer_alloc_callback, _udp_recv_callback);
   if (err != 0) {
     return err;
   }
@@ -578,7 +578,7 @@ void helium_set_context(helium_connection_t *conn, void *newcontext)
 int helium_open_b(helium_connection_t *conn, char *proxy_addr, helium_block_t block)
 {
   conn->callback_block = block; // Block_copy(block) here??
-  return helium_init(conn, proxy_addr, _helium_block_callback);
+  return helium_init(conn, proxy_addr, _block_callback);
 }
 
 #endif
