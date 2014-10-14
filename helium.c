@@ -189,6 +189,8 @@ void _helium_async_callback(uv_async_t *async)
     break; // currently not implemented
   }
 
+  uv_sem_post(&conn->sem);
+
   if (result != 0) {
     free(request);
   }
@@ -356,8 +358,6 @@ int _handle_quit(helium_connection_t *conn)
   uv_unref((uv_handle_t*)&conn->udp_handle);
   uv_unref((uv_handle_t*)&conn->subscription_timer);
   uv_unref((uv_handle_t*)&conn->async_handle);
-
-  uv_sem_post(&conn->sem);
   
   return 0;
 }
@@ -406,8 +406,6 @@ int _handle_subscribe_request(helium_connection_t *conn,
     helium_dbg("Couldn't get device addr");
     free(packet);
   }
-
-  uv_sem_post(&conn->sem);
   
   return 0;
 }
@@ -447,8 +445,6 @@ int _handle_send_request(helium_connection_t *conn,
   send_req->data = message;
   uv_udp_send(send_req, &conn->udp_handle, &buf, 1, address->ai_addr, _helium_send_callback);
   freeaddrinfo(address);
-
-  uv_sem_post(&conn->sem);
 
   return 0;
 }
