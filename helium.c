@@ -140,21 +140,6 @@ int libhelium_decrypt_packet(const unsigned char *token, const unsigned char *pa
   return outlen;
 }
 
-struct helium_send_req_s {
-  uint64_t macaddr;
-  helium_token_t token;
-  char *message;
-  size_t count;
-  helium_connection_t *conn;
-};
-
-struct helium_subscribe_req_s {
-  uint64_t macaddr;
-  helium_token_t token;
-  helium_connection_t *conn;
-  unsigned char subscribe;
-};
-
 int _helium_getdeviceaddr(uint64_t macaddr, char *proxy, struct addrinfo **address) {
   char *target;
   struct addrinfo hints = {AF_UNSPEC, SOCK_DGRAM, 0, 0};
@@ -179,6 +164,36 @@ int _helium_getdeviceaddr(uint64_t macaddr, char *proxy, struct addrinfo **addre
   }
 
   return err;
+}
+
+void _helium_async_callback(uv_async_t *async)
+{
+  helium_dbg("In async callback");
+  struct helium_request_s *request = (struct helium_request_s *)async->data;
+  assert(request != NULL);
+
+  helium_connection_t *conn = request->conn;
+  uint64_t macaddr = request->macaddr;
+  int result = 0;
+
+  assert(conn != NULL);
+
+  switch (request->request_type) {
+  case SUBSCRIBE_REQUEST:
+    result = _handle_subscribe_request(conn, macaddr, request->token);
+  case SEND_REQUEST:
+    result = _handle_send_request(conn, macaddr, request->token, request->message, request->count);
+  case QUIT_REQUEST:
+    result = _handle_quit(conn);
+  case UNSUBSCRIBE_REQUEST:
+    break; // currently not implemented
+  }
+
+  uv_sem_post(&conn->sem);
+
+  if (result != 0) {
+    free(request);
+  }
 }
 
 void _helium_buffer_alloc_callback(uv_handle_t *handle, size_t suggested, uv_buf_t *dst)
@@ -334,108 +349,104 @@ void _helium_refresh_subscriptions(uv_timer_t *handle) {
   }
 }
 
-void _helium_do_quit(uv_async_t *handle) {
-  helium_connection_t *conn = handle->data;
-  // stop UDP and the resubscription timer
+int _handle_quit(helium_connection_t *conn)
+{
+    // stop UDP and the resubscription timer
   uv_udp_recv_stop(&conn->udp_handle);
   uv_timer_stop(&conn->subscription_timer);
   // unref all the handles
   uv_unref((uv_handle_t*)&conn->udp_handle);
   uv_unref((uv_handle_t*)&conn->subscription_timer);
-  uv_unref((uv_handle_t*)&conn->send_async);
-  uv_unref((uv_handle_t*)&conn->subscribe_async);
-  uv_unref((uv_handle_t*)&conn->quit_async);
-
-
-  uv_sem_post(&conn->sem);
-  // we don't need to uv_stop() here, the event loop exits normally
-  /*uv_stop(&conn->loop);*/
+  uv_unref((uv_handle_t*)&conn->async_handle);
+  
+  return 0;
 }
 
-void _helium_do_subscribe(uv_async_t *handle) {
-  struct helium_subscribe_req_s *req = (struct helium_subscribe_req_s*)handle->data;
-  helium_connection_t *conn = req->conn;
-
-  // keep track of the token, so we can decrypt replies
+int _handle_subscribe_request(helium_connection_t *conn,
+                              uint64_t macaddr,
+                              helium_token_t token)
+{
+    // keep track of the token, so we can decrypt replies
   struct helium_mac_token_map *entry = malloc(sizeof(struct helium_mac_token_map));
-  entry->mac = req->macaddr;
-  memcpy(entry->token, req->token, sizeof(helium_token_t));
+  entry->mac = macaddr;
+  memcpy(entry->token, token, sizeof(helium_token_t));
 
   struct helium_mac_token_map *old = NULL;
   HASH_REPLACE(hh, conn->subscription_map, mac, sizeof(uint64_t), entry, old);
   free(old); // no-op if old == NULL, otherwise frees the old entry
 
-  size_t count;
-  unsigned char *packet = NULL;
+
   struct addrinfo *address = NULL;
+  unsigned char *packet = NULL;
   int err;
-  count = libhelium_encrypt_packet(req->token, (unsigned char*)"", 's', &packet);
+  size_t count;
+  
+  count = libhelium_encrypt_packet(token, (unsigned char*)"", 's', &packet);
   if (count < 1) {
-    helium_dbg("failed to encrypt ubscription packet for %" PRIu64 "\n", req->macaddr);
-    free(req);
-    return;
+    helium_dbg("failed to encrypt ubscription packet for %" PRIu64 "\n", macaddr);
+    return -1;
   }
-  err = _helium_getdeviceaddr(req->macaddr, conn->proxy_addr, &address);
+  
+  err = _helium_getdeviceaddr(macaddr, conn->proxy_addr, &address);
   if (err == 0) {
     if (conn->proxy_addr != NULL) {
       // make room for prefixing the MAC onto the packet
       packet = realloc(packet, count+8);
       memmove(packet+8, packet, count);
-      memcpy(packet, (void*)&req->macaddr, 8);
+      memcpy(packet, (void*)&macaddr, 8);
       count += 8;
     }
     uv_buf_t buf = { (char*)packet, count };
     uv_udp_send_t *send_req = malloc(sizeof(uv_udp_send_t));
     send_req->data = packet;
     uv_udp_send(send_req, &conn->udp_handle, &buf, 1, address->ai_addr, _helium_send_callback);
-    helium_dbg("subscribed to %" PRIu64 "\n", req->macaddr);
+    helium_dbg("subscribed to %" PRIu64 "\n", macaddr);
     freeaddrinfo(address);
   } else {
+    helium_dbg("Couldn't get device addr");
     free(packet);
   }
-
-  uv_sem_post(&conn->sem);
-  free(req);
+  
+  return 0;
 }
 
-void _helium_do_udp_send(uv_async_t *handle)
+int _handle_send_request(helium_connection_t *conn,
+                         uint64_t macaddr,
+                         helium_token_t token,
+                         unsigned char *message,
+                         size_t count)
 {
-  struct helium_send_req_s *req = (struct helium_send_req_s*)handle->data;
-  helium_connection_t *conn = req->conn;
-
   // keep track of the token, so we can decrypt replies
   struct helium_mac_token_map *entry = malloc(sizeof(struct helium_mac_token_map));
-  entry->mac = req->macaddr;
-  memcpy(entry->token, req->token, sizeof(helium_token_t));
+  entry->mac = macaddr;
+  memcpy(entry->token, token, sizeof(helium_token_t));
 
   struct helium_mac_token_map *old = NULL;
   HASH_REPLACE(hh, conn->token_map, mac, sizeof(uint64_t), entry, old);
   free(old); // no-op if old == NULL, otherwise frees the old entry
 
   struct addrinfo *address = NULL;
-  int err = _helium_getdeviceaddr(req->macaddr, conn->proxy_addr, &address);
+  int err = _helium_getdeviceaddr(macaddr, conn->proxy_addr, &address);
 
   if (err != 0) {
-    goto done;
+    return err;
   }
 
   if (conn->proxy_addr != NULL) {
     // make room for prefixing the MAC onto the packet
-    req->message = realloc(req->message, req->count+8);
-    memmove(req->message+8, req->message, req->count);
-    memcpy(req->message, (void*)&req->macaddr, 8);
-    req->count += 8;
+    message = realloc(message, count+8);
+    memmove(message+8, message, count);
+    memcpy(message, (void*)&macaddr, 8);
+    count += 8;
   }
 
-
-  uv_buf_t buf = { req->message, req->count };
+  uv_buf_t buf = { (char *)message, count };
   uv_udp_send_t *send_req = malloc(sizeof(uv_udp_send_t));
-  send_req->data = req->message;
+  send_req->data = message;
   uv_udp_send(send_req, &conn->udp_handle, &buf, 1, address->ai_addr, _helium_send_callback);
   freeaddrinfo(address);
-done:
-  uv_sem_post(&conn->sem);
-  free(req);
+
+  return 0;
 }
 
 void _bootup(void *arg)
@@ -484,9 +495,7 @@ int helium_open(helium_connection_t *conn, const char *proxy_addr, helium_callba
 {
   conn->token_map = NULL;
   conn->subscription_map = NULL;
-  uv_async_init(conn->loop, &conn->send_async, _helium_do_udp_send);
-  uv_async_init(conn->loop, &conn->subscribe_async, _helium_do_subscribe);
-  uv_async_init(conn->loop, &conn->quit_async, _helium_do_quit);
+  uv_async_init(conn->loop, &conn->async_handle, _helium_async_callback);
   uv_timer_init(conn->loop, &conn->subscription_timer);
   uv_sem_init(&conn->sem, 0);
   uv_mutex_init(&conn->mutex);
@@ -535,14 +544,16 @@ int helium_open(helium_connection_t *conn, const char *proxy_addr, helium_callba
 
 int helium_subscribe(helium_connection_t *conn, uint64_t macaddr, helium_token_t token)
 {
-  struct helium_subscribe_req_s *req = malloc(sizeof(struct helium_subscribe_req_s));
+  struct helium_request_s *req = malloc(sizeof(struct helium_request_s));
+  
+  req->request_type = SUBSCRIBE_REQUEST;
   req->macaddr = macaddr;
   memcpy(req->token, token, 16);
   req->conn = conn;
-  req->subscribe = 1;
   uv_mutex_lock(&conn->mutex);
-  conn->subscribe_async.data = req;
-  uv_async_send(&conn->subscribe_async);
+
+  conn->async_handle.data = req;
+  uv_async_send(&conn->async_handle);
   // wait for the event loop to call sem_post on this semaphore
   uv_sem_wait(&conn->sem);
   uv_mutex_unlock(&conn->mutex);
@@ -577,31 +588,43 @@ int helium_send(helium_connection_t *conn, uint64_t macaddr, helium_token_t toke
     return -1;
   }
 
-  struct helium_send_req_s *req = malloc(sizeof(struct helium_send_req_s));
-
+  struct helium_request_s *req = malloc(sizeof(struct helium_request_s));
+  req->request_type = SEND_REQUEST;
   req->macaddr = macaddr;
   memcpy(req->token, token, 16);
-  req->message = (char*)packet;
+  
+  req->message = packet;
   req->count = count;
   req->conn = conn;
+
+
   uv_mutex_lock(&conn->mutex);
-  conn->send_async.data = (void*)req;
-  uv_async_send(&conn->send_async);
+
+  conn->async_handle.data = (void*)req;
+  uv_async_send(&conn->async_handle);
+
   // wait for the event loop to call sem_post on this semaphore
   uv_sem_wait(&conn->sem);
   uv_mutex_unlock(&conn->mutex);
+
   return 0;
 }
 
 int helium_close(helium_connection_t *conn)
 {
-  free(conn->proxy_addr);
+  struct helium_request_s *request = calloc(1, sizeof(struct helium_request_s));
+  request->conn = conn;
+  request->request_type = QUIT_REQUEST;
+  
   uv_mutex_lock(&conn->mutex);
-  conn->quit_async.data = conn;
-  uv_async_send(&conn->quit_async);
+  conn->async_handle.data = request;
+  uv_async_send(&conn->async_handle);
   // wait for the event loop to call sem_post on this semaphore
   uv_sem_wait(&conn->sem);
   uv_mutex_unlock(&conn->mutex);
+
+  free(conn->proxy_addr);
+
   return 0;
 }
 
