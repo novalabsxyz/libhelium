@@ -41,8 +41,33 @@ brew install --devel libuv
 
 You'll need libuv. Install it from git or with your favorite package manager. You'll need `clang` and [`libblocksruntime`](http://mackyle.github.io/blocksruntime/) if you want to build with C blocks support on.
 
+### cmake
+
+3.0 or higher is required, if your package manager doesn't have cmake 3, then build from source:
+
+```
+wget http://www.cmake.org/files/v3.0/cmake-3.0.2.tar.gz
+tar -zxf cmake-3.0.2.tar.gz
+cd cmake-3.0.2/
+./bootstrap && make && make install
+```
+
+### libuv
+
+To build from source:
+
+```
+git clone https://github.com/joyent/libuv
+cd libuv
+sh autogen.sh
+./configure
+make ; make install
+```
+
+
 building
 ========
+
 
 ```
   git clone git@github.com:nervcorp/libhelium ; cd libhelium
