@@ -181,10 +181,13 @@ void _helium_async_callback(uv_async_t *async)
   switch (request->request_type) {
   case SUBSCRIBE_REQUEST:
     result = _handle_subscribe_request(conn, macaddr, request->token);
+    break;
   case SEND_REQUEST:
     result = _handle_send_request(conn, macaddr, request->token, request->message, request->count);
+    break;
   case QUIT_REQUEST:
     result = _handle_quit(conn);
+    break;
   case UNSUBSCRIBE_REQUEST:
     break; // currently not implemented
   }
