@@ -6,7 +6,7 @@
 #include <openssl/bio.h>
 
 #include "helium.h"
-#include "logging.h"
+#include "helium_logging.h"
 
 void test_callback(const helium_connection_t *conn, uint64_t sender_mac, char * const message, size_t count)
 {
