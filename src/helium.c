@@ -194,7 +194,7 @@ void _helium_async_callback(uv_async_t *async)
 
   uv_sem_post(&conn->sem);
 
-  if (result != 0) {
+  if (result == 0) {
     free(request);
   }
 }
