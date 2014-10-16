@@ -12,56 +12,9 @@
 #include "helium_internal.h"
 #include "helium_logging.h"
 
-uv_loop_t __default_loop;
-uv_thread_t __loop_runner_thread;
-uv_idle_t __loop_idler;
-
 const char *libhelium_version()
 {
   return LIBHELIUM_VERSION;
-}
-
-// invoked via __loop_runner_thread
-void _run_default_loop(void *unused)
-{
-  uv_run(&__default_loop, UV_RUN_DEFAULT);
-}
-
-// invoked by atexit(3)
-void _teardown_default_loop(void)
-{
-
-  // Kill the idling process
-  uv_idle_stop(&__loop_idler);
-
-  // And the loop
-  uv_stop(&__default_loop);
-  uv_loop_close(&__default_loop);
-
-  uv_thread_join(&__loop_runner_thread);
-}
-
-void _do_nothing(uv_idle_t *unused)
-{
-
-}
-
-void _start_default_loop(void)
-{
-  uv_loop_init(&__default_loop);
-  uv_idle_init(&__default_loop, &__loop_idler);
-  uv_idle_start(&__loop_idler, _do_nothing);
-  uv_thread_create(&__loop_runner_thread, _run_default_loop, NULL);
-  atexit(_teardown_default_loop);
-}
-
-uv_loop_t *helium_default_loop(void)
-{
-  static uv_once_t once = UV_ONCE_INIT;
-  uv_once(&once, _start_default_loop);
-  printf("Helium struct is %ld bytes\n", sizeof(helium_connection_t));
-
-  return &__default_loop;
 }
 
 // encrypt a message into a packet
@@ -358,9 +311,9 @@ int _handle_quit(helium_connection_t *conn)
   uv_udp_recv_stop(&conn->udp_handle);
   uv_timer_stop(&conn->subscription_timer);
   // unref all the handles
-  uv_unref((uv_handle_t*)&conn->udp_handle);
-  uv_unref((uv_handle_t*)&conn->subscription_timer);
-  uv_unref((uv_handle_t*)&conn->async_handle);
+  uv_close((uv_handle_t*)&conn->udp_handle, NULL);
+  uv_close((uv_handle_t*)&conn->subscription_timer, NULL);
+  uv_close((uv_handle_t*)&conn->async_handle, NULL);
   
   return 0;
 }
@@ -452,26 +405,30 @@ int _handle_send_request(helium_connection_t *conn,
   return 0;
 }
 
-void _bootup(void *arg)
+void _run_uv_loop(void *arg)
 {
   helium_connection_t *conn = (helium_connection_t *)arg;
-  uv_run(conn->loop, UV_RUN_DEFAULT);
+  while (conn->active) {
+    uv_run(conn->loop, UV_RUN_NOWAIT);
+  }
 }
 
-helium_connection_t *helium_alloc(uv_loop_t *loop)
+helium_connection_t *helium_alloc(void)
 {
   helium_connection_t *conn = calloc(sizeof(helium_connection_t), 1);
-  if (loop == NULL) {
-    loop = helium_default_loop();
-  }
-  conn->loop = loop;
-  // TODO: do we need to increment the refcount of the loop
-  // (and decrement it in helium_free?)
+  conn->loop = calloc(sizeof(uv_loop_t), 1);
+  conn->thread = calloc(sizeof(uv_thread_t), 1);
+  conn->active = 1;
+
+  uv_loop_init(conn->loop);
+  uv_thread_create(conn->thread, _run_uv_loop, conn);
+
   return conn;
 }
 
 void helium_free(helium_connection_t *conn)
 {
+  conn->active = 0;
   struct helium_mac_token_map *iter = NULL;
   struct helium_mac_token_map *tmp = NULL;
 
@@ -487,9 +444,22 @@ void helium_free(helium_connection_t *conn)
     HASH_DEL(conn->subscription_map, iter2);
     free(iter2);
   }
+  
+  uv_thread_join(conn->thread);
+
+  uv_stop(conn->loop);
+  int closed = uv_loop_close(conn->loop);
+
+  while(closed == UV_EBUSY) {
+    closed = uv_loop_close(conn->loop);
+  }
 
   uv_sem_destroy(&conn->sem);
   uv_mutex_destroy(&conn->mutex);
+
+
+  free(conn->loop);
+  free(conn->thread);
 
   free(conn);
 }
@@ -627,6 +597,7 @@ int helium_close(helium_connection_t *conn)
   uv_mutex_unlock(&conn->mutex);
 
   free(conn->proxy_addr);
+  conn->proxy_addr = NULL;
 
   return 0;
 }
