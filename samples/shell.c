@@ -66,6 +66,5 @@ int main(int argc, char *argv[])
   helium_close(conn);
   helium_free(conn);
 
-  CRYPTO_cleanup_all_ex_data();
   return 0;
 }

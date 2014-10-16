@@ -602,8 +602,15 @@ int helium_close(helium_connection_t *conn)
   return 0;
 }
 
+void _cleanup_openssl_garbage(void)
+{
+  atexit(CRYPTO_cleanup_all_ex_data);
+}
+
 int helium_base64_token_decode(const unsigned char *input, int length, helium_token_t token_out)
 {
+  static uv_once_t once = UV_ONCE_INIT;
+  uv_once(&once, _cleanup_openssl_garbage);
   BIO *b64, *bmem, *decoder;
 
   b64 = BIO_new(BIO_f_base64());
