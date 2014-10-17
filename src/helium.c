@@ -307,14 +307,14 @@ void _refresh_subscriptions(uv_timer_t *handle) {
 
 int _handle_quit(helium_connection_t *conn)
 {
-    // stop UDP and the resubscription timer
+  // stop UDP and the resubscription timer
   uv_udp_recv_stop(&conn->udp_handle);
   uv_timer_stop(&conn->subscription_timer);
-  // unref all the handles
+  // close all the handles
   uv_close((uv_handle_t*)&conn->udp_handle, NULL);
   uv_close((uv_handle_t*)&conn->subscription_timer, NULL);
   uv_close((uv_handle_t*)&conn->async_handle, NULL);
-  
+
   return 0;
 }
 
@@ -408,9 +408,7 @@ int _handle_send_request(helium_connection_t *conn,
 void _run_uv_loop(void *arg)
 {
   helium_connection_t *conn = (helium_connection_t *)arg;
-  while (conn->active) {
-    uv_run(conn->loop, UV_RUN_NOWAIT);
-  }
+  uv_run(conn->loop, UV_RUN_DEFAULT);
 }
 
 helium_connection_t *helium_alloc(void)
@@ -418,7 +416,6 @@ helium_connection_t *helium_alloc(void)
   helium_connection_t *conn = calloc(sizeof(helium_connection_t), 1);
   conn->loop = calloc(sizeof(uv_loop_t), 1);
   conn->thread = calloc(sizeof(uv_thread_t), 1);
-  conn->active = 1;
 
   uv_loop_init(conn->loop);
   uv_thread_create(conn->thread, _run_uv_loop, conn);
@@ -428,7 +425,9 @@ helium_connection_t *helium_alloc(void)
 
 void helium_free(helium_connection_t *conn)
 {
-  conn->active = 0;
+  free(conn->proxy_addr);
+  conn->proxy_addr = NULL;
+
   struct helium_mac_token_map *iter = NULL;
   struct helium_mac_token_map *tmp = NULL;
 
@@ -445,7 +444,6 @@ void helium_free(helium_connection_t *conn)
     free(iter2);
   }
   
-  uv_thread_join(conn->thread);
 
   uv_stop(conn->loop);
   int closed = uv_loop_close(conn->loop);
@@ -588,7 +586,7 @@ int helium_close(helium_connection_t *conn)
   struct helium_request_s *request = calloc(1, sizeof(struct helium_request_s));
   request->conn = conn;
   request->request_type = QUIT_REQUEST;
-  
+
   uv_mutex_lock(&conn->mutex);
   conn->async_handle.data = request;
   uv_async_send(&conn->async_handle);
@@ -596,8 +594,8 @@ int helium_close(helium_connection_t *conn)
   uv_sem_wait(&conn->sem);
   uv_mutex_unlock(&conn->mutex);
 
-  free(conn->proxy_addr);
-  conn->proxy_addr = NULL;
+  // the quit message will cause the uv_loop to stop running and make the thread exit
+  uv_thread_join(conn->thread);
 
   return 0;
 }

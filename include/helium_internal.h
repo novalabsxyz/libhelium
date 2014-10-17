@@ -8,12 +8,11 @@
 struct helium_connection_s {
   uv_loop_t *loop;
   uv_thread_t *thread;
-  
+
   uv_async_t async_handle;
   uv_sem_t sem;
   uv_mutex_t mutex;
-  _Bool active;
-  
+
   uv_udp_t udp_handle;
   uv_timer_t subscription_timer;
   char *proxy_addr;
