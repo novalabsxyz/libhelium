@@ -10,7 +10,7 @@ void test_freeing_null() {
 }
 
 void test_alloc_then_free() {
-  helium_connection_t *conn = helium_alloc(NULL);
+  helium_connection_t *conn = helium_alloc();
   helium_free(conn);
 }
 
