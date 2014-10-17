@@ -94,4 +94,4 @@ will subscribe you to messages from device 00212effffffffff that is being routed
 info
 ====
 
-libhelium is copyright (c) Helium Systems, Inc. and distributed to the public under the terms of the 3-clause BSD liense.
+libhelium is copyright (c) Helium Systems, Inc. and distributed to the public under the terms of the MIT license.
