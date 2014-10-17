@@ -17,6 +17,7 @@ const char *libhelium_version()
   return LIBHELIUM_VERSION;
 }
 
+
 // encrypt a message into a packet
 // this function mallocs its own output buffer into **dst
 int libhelium_encrypt_packet(const unsigned char *token, const unsigned char *message, char prefix, unsigned char **dst) {
@@ -425,8 +426,14 @@ helium_connection_t *helium_alloc(void)
 
 void helium_free(helium_connection_t *conn)
 {
+  if (conn == NULL) {
+    return;
+  }
+  
+  
   free(conn->proxy_addr);
   conn->proxy_addr = NULL;
+
 
   struct helium_mac_token_map *iter = NULL;
   struct helium_mac_token_map *tmp = NULL;
