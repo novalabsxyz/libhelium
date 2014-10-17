@@ -22,9 +22,6 @@ void test_callback2(const helium_connection_t *conn, uint64_t sender_mac, char *
 
 int main(int argc, char *argv[])
 {
-  uv_loop_t my_loop;
-  uv_loop_init(&my_loop);
-  
   helium_logging_start();
   char *proxy = NULL;
 
@@ -36,17 +33,27 @@ int main(int argc, char *argv[])
 
   helium_token_t token;
 
-  unsigned char *token1 = (unsigned char*)"c8GKvZyayaIhQpRjIo4aYQ==";
-  unsigned char *token2 = (unsigned char*)"E3J1AVDORcwOFsQDajBWOQ==";
+  unsigned char *token1 = (unsigned char*)"vvseLv3rAtsVl2BdnW4S5A==";
+  unsigned char *token2 = (unsigned char*)"WMjvdsPlReLHHAJqnbqvPw==";
 
   helium_base64_token_decode(token1, strlen((char*)token1), token);
   helium_subscribe(conn, 18838586654721, token);
   helium_base64_token_decode(token2, strlen((char*)token2), token);
   helium_subscribe(conn2, 18838586654722, token);
+  char message[1024];
+  while(1) {
+    fgets(message, 1024, stdin);
+    if (strncmp(message, "QUIT", 4) == 0) {
+      printf("quitting\n");
+      break;
+    }
+  }
 
-  uv_run(&my_loop, UV_RUN_DEFAULT);
-  
   helium_close(conn);
   helium_free(conn);
+
+  helium_close(conn2);
+  helium_free(conn2);
+
   return 0;
 }
