@@ -59,7 +59,7 @@ uv_loop_t *helium_default_loop(void)
 {
   static uv_once_t once = UV_ONCE_INIT;
   uv_once(&once, _start_default_loop);
-  printf("Helium struct is %ld bytes\n", sizeof(helium_connection_t));
+  helium_dbg("Helium struct is %ld bytes\n", sizeof(helium_connection_t));
 
   return &__default_loop;
 }
@@ -472,6 +472,10 @@ helium_connection_t *helium_alloc(uv_loop_t *loop)
 
 void helium_free(helium_connection_t *conn)
 {
+  if (conn == NULL) {
+    return;
+  }
+  
   struct helium_mac_token_map *iter = NULL;
   struct helium_mac_token_map *tmp = NULL;
 
