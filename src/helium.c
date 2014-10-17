@@ -622,7 +622,8 @@ int helium_base64_token_decode(const unsigned char *input, int length, helium_to
   BIO_set_flags(b64, BIO_FLAGS_BASE64_NO_NL);
   bmem = BIO_new_mem_buf((void *)input, length);
   decoder = BIO_push(b64, bmem);
-  BIO_flush(decoder);
+  // cast to void to avoid unused var warnings
+  (void)BIO_flush(decoder);
   int readlen = BIO_read(decoder, token_out, length);
   BIO_free_all(b64);
   return readlen;
