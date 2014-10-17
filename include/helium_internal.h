@@ -3,7 +3,7 @@
 #include <uv.h>
 
 #include "helium.h"
-#include "uthash.h"
+#include "hashmap.h"
 
 struct helium_connection_s {
   uv_loop_t *loop;
@@ -18,8 +18,8 @@ struct helium_connection_s {
   char *proxy_addr;
   helium_callback_t callback;
   void *context;
-  struct helium_mac_token_map *token_map;
-  struct helium_mac_token_map *subscription_map;
+  hashmap token_map;
+  hashmap subscription_map;
 #if HAVE_BLOCKS
   helium_block_t callback_block;
 #endif
@@ -30,12 +30,6 @@ struct helium_callback_invocation_s {
   char *message;
   uint64_t mac;
   int res;
-};
-
-struct helium_mac_token_map {
-  uint64_t mac;
-  helium_token_t token;
-  UT_hash_handle hh;
 };
 
 typedef enum {

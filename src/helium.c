@@ -203,18 +203,19 @@ void _udp_recv_callback(uv_udp_t *handle, ssize_t nread, const uv_buf_t *buf, co
   }
 
   unsigned char *out = NULL;
-  struct helium_mac_token_map *entry = NULL;
-  HASH_FIND(hh, conn->token_map, &macaddr, sizeof(macaddr), entry);
+  char *token = NULL;
+  unsigned int len;
+  hashmap_get(&conn->token_map, &macaddr, sizeof(uint64_t), (void**)&token, &len);
 
-  if (!entry) {
-    HASH_FIND(hh, conn->subscription_map, &macaddr, sizeof(macaddr), entry);
-    if (!entry) {
+  if (!token) {
+    hashmap_get(&conn->subscription_map, &macaddr, sizeof(uint64_t), (void**)&token, &len);
+    if (!token) {
       helium_log(LOG_ERR, "couldn't find entry in mac->token map for mac addr %" PRIx64, macaddr);
       return;
     }
   }
 
-  int res = libhelium_decrypt_packet(entry->token, (unsigned char*)message, nread, &out);
+  int res = libhelium_decrypt_packet((unsigned char*)token, (unsigned char*)message, nread, &out);
   if (res < 1) {
     helium_dbg("decryption failed %d\n", res);
     free(out);
@@ -273,32 +274,34 @@ void _send_callback(uv_udp_send_t *req, int status)
 void _refresh_subscriptions(uv_timer_t *handle) {
   helium_connection_t *conn = handle->data;
   helium_dbg("subscription refresh timer fired\n");
-  struct helium_mac_token_map *s;
   size_t count;
   unsigned char *packet = NULL;
   struct addrinfo *address = NULL;
   int err;
-  for(s=conn->subscription_map; s != NULL; s=s->hh.next) {
+  iterator it;
+  hashmap_pair *pair = NULL;
+  hashmap_iter_begin(&conn->subscription_map, &it);
+  while((pair = iter_next(&it)) != NULL) {
     packet=NULL;
-    count = libhelium_encrypt_packet(s->token, (unsigned char*)"", 's', &packet);
+    count = libhelium_encrypt_packet((unsigned char*)pair->val, (unsigned char*)"", 's', &packet);
     if (count < 1) {
-      helium_dbg("failed to encrypt re-subscription packet for %" PRIu64 "\n", s->mac);
+      helium_dbg("failed to encrypt re-subscription packet for %" PRIu64 "\n", *(uint64_t*)pair->key);
       continue;
     }
-    err = _getdeviceaddr(s->mac, conn->proxy_addr, &address);
+    err = _getdeviceaddr(*(uint64_t*)pair->key, conn->proxy_addr, &address);
     if (err == 0) {
       if (conn->proxy_addr != NULL) {
         // make room for prefixing the MAC onto the packet
         packet = realloc(packet, count+8);
         memmove(packet+8, packet, count);
-        memcpy(packet, (void*)&s->mac, 8);
+        memcpy(packet, pair->key, 8);
         count += 8;
       }
       uv_buf_t buf = { (char*)packet, count };
       uv_udp_send_t *send_req = malloc(sizeof(uv_udp_send_t));
       send_req->data = packet;
       uv_udp_send(send_req, &conn->udp_handle, &buf, 1, address->ai_addr, _send_callback);
-      helium_dbg("resubscribed to %" PRIu64 "\n", s->mac);
+      helium_dbg("resubscribed to %" PRIu64 "\n", *(uint64_t*)pair->key);
       freeaddrinfo(address);
     } else {
       free(packet);
@@ -323,14 +326,8 @@ int _handle_subscribe_request(helium_connection_t *conn,
                               uint64_t macaddr,
                               helium_token_t token)
 {
-    // keep track of the token, so we can decrypt replies
-  struct helium_mac_token_map *entry = malloc(sizeof(struct helium_mac_token_map));
-  entry->mac = macaddr;
-  memcpy(entry->token, token, sizeof(helium_token_t));
-
-  struct helium_mac_token_map *old = NULL;
-  HASH_REPLACE(hh, conn->subscription_map, mac, sizeof(uint64_t), entry, old);
-  free(old); // no-op if old == NULL, otherwise frees the old entry
+  // keep track of the token, so we can decrypt replies
+    hashmap_put(&conn->subscription_map, &macaddr, sizeof(uint64_t), token, sizeof(helium_token_t));
 
 
   struct addrinfo *address = NULL;
@@ -374,13 +371,7 @@ int _handle_send_request(helium_connection_t *conn,
                          size_t count)
 {
   // keep track of the token, so we can decrypt replies
-  struct helium_mac_token_map *entry = malloc(sizeof(struct helium_mac_token_map));
-  entry->mac = macaddr;
-  memcpy(entry->token, token, sizeof(helium_token_t));
-
-  struct helium_mac_token_map *old = NULL;
-  HASH_REPLACE(hh, conn->token_map, mac, sizeof(uint64_t), entry, old);
-  free(old); // no-op if old == NULL, otherwise frees the old entry
+  hashmap_put(&conn->token_map, &macaddr, sizeof(uint64_t), token, sizeof(helium_token_t));
 
   struct addrinfo *address = NULL;
   int err = _getdeviceaddr(macaddr, conn->proxy_addr, &address);
@@ -434,23 +425,20 @@ void helium_free(helium_connection_t *conn)
   free(conn->proxy_addr);
   conn->proxy_addr = NULL;
 
-
-  struct helium_mac_token_map *iter = NULL;
-  struct helium_mac_token_map *tmp = NULL;
-
-  HASH_ITER(hh, conn->token_map, iter, tmp) {
-    HASH_DEL(conn->token_map, iter);
-    free(iter);
+  iterator it;
+  hashmap_pair *pair = NULL;
+  hashmap_iter_begin(&conn->token_map, &it);
+  while((pair = iter_next(&it)) != NULL) {
+    hashmap_delete(&conn->token_map, &it);
   }
 
-  struct helium_mac_token_map *iter2 = NULL;
-  struct helium_mac_token_map *tmp2 = NULL;
-
-  HASH_ITER(hh, conn->subscription_map, iter2, tmp2) {
-    HASH_DEL(conn->subscription_map, iter2);
-    free(iter2);
+  hashmap_iter_begin(&conn->subscription_map, &it);
+  while((pair = iter_next(&it)) != NULL) {
+    hashmap_delete(&conn->subscription_map, &it);
   }
-  
+
+  hashmap_free(&conn->token_map);
+  hashmap_free(&conn->subscription_map);
 
   uv_stop(conn->loop);
   int closed = uv_loop_close(conn->loop);
@@ -471,8 +459,8 @@ void helium_free(helium_connection_t *conn)
 
 int helium_open(helium_connection_t *conn, const char *proxy_addr, helium_callback_t callback)
 {
-  conn->token_map = NULL;
-  conn->subscription_map = NULL;
+  hashmap_create(&conn->token_map, 8);
+  hashmap_create(&conn->subscription_map, 8);
   uv_async_init(conn->loop, &conn->async_handle, _async_callback);
   uv_timer_init(conn->loop, &conn->subscription_timer);
   uv_sem_init(&conn->sem, 0);
