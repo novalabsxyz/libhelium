@@ -6,8 +6,6 @@ include(CheckIncludeFiles)
 
 # Build with blocks by default. If you don't have clang it'll whine at you.
 option(BLOCKS "BLOCKS" ON)
-# Don't build tests by default
-option(ENABLE_TESTS "ENABLE_TESTS" FALSE)
 
 set(VERSION_MAJOR "0")
 set(VERSION_MINOR "0")
@@ -26,9 +24,7 @@ if(BLOCKS AND NOT APPLE)
   find_package(blocksruntime)
 endif(BLOCKS AND NOT APPLE)
 
-if(ENABLE_TESTS)
-  find_package(cunit)
-endif(ENABLE_TESTS)
+find_package(cunit)
 
 set(HELIUM_INCLUDES
   include
@@ -101,14 +97,14 @@ add_dependencies(multiloop_test helium)
 target_include_directories(multiloop_test PUBLIC ${SAMPLE_INCLUDES})
 target_link_libraries(multiloop_test PUBLIC ${SAMPLE_LIBRARIES})
 
-if(ENABLE_TESTS)
+if(CUNIT_FOUND)
   enable_testing()
   add_executable(test_suite ${HELIUM_TEST_FILES})
   add_dependencies(test_suite helium)
   target_include_directories(test_suite PUBLIC ${SAMPLE_INCLUDES})
   target_link_libraries(test_suite PUBLIC ${TEST_LIBRARIES})
   add_test(test_on_and_off test_suite)
-endif(ENABLE_TESTS)
+endif(CUNIT_FOUND)
 
 find_package(Doxygen)
 if (DOXYGEN_FOUND)
