@@ -120,3 +120,4 @@ if (DOXYGEN_FOUND)
     COMMENT "Generating API documentation with Doxygen" )
 endif(DOXYGEN_FOUND)
 
+add_custom_target(uninstall "${CMAKE_COMMAND}" -P "${CMAKE_MODULE_PATH}/uninstall.cmake")
