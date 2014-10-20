@@ -60,4 +60,8 @@ int _handle_subscribe_request(helium_connection_t *conn,
                               uint64_t macaddr,
                               helium_token_t token);
 
+
+int _handle_unsubscribe_request(helium_connection_t *conn,
+                              uint64_t macaddr);
+
 int _handle_quit(helium_connection_t *conn);

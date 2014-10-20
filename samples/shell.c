@@ -48,6 +48,9 @@ int main(int argc, char *argv[])
       if (strncmp("s", message, 1) == 0) {
         int  err = helium_subscribe(conn, mac, token);
         helium_dbg("subscribe result %d\n", err);
+      } else if (strncmp("u", message, 1) == 0) {
+        int  err = helium_unsubscribe(conn, mac);
+        helium_dbg("unsubscribe result %d\n", err);
       } else {
         int  err = helium_send(conn, mac, token, (unsigned char*)message, strlen(message));
         helium_dbg("send result %d\n", err);

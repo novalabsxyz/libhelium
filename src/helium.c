@@ -143,7 +143,9 @@ void _async_callback(uv_async_t *async)
     result = _handle_quit(conn);
     break;
   case UNSUBSCRIBE_REQUEST:
-    break; // currently not implemented
+    helium_dbg("unsubscribing");
+    result = _handle_unsubscribe_request(conn, macaddr);
+    break;
   }
 
   uv_sem_post(&conn->sem);
@@ -327,7 +329,7 @@ int _handle_subscribe_request(helium_connection_t *conn,
                               helium_token_t token)
 {
   // keep track of the token, so we can decrypt replies
-    hashmap_put(&conn->subscription_map, &macaddr, sizeof(uint64_t), token, sizeof(helium_token_t));
+  hashmap_put(&conn->subscription_map, &macaddr, sizeof(uint64_t), token, sizeof(helium_token_t));
 
 
   struct addrinfo *address = NULL;
@@ -337,7 +339,7 @@ int _handle_subscribe_request(helium_connection_t *conn,
   
   count = libhelium_encrypt_packet(token, (unsigned char*)"", 's', &packet);
   if (count < 1) {
-    helium_dbg("failed to encrypt ubscription packet for %" PRIu64 "\n", macaddr);
+    helium_dbg("failed to encrypt subscription packet for %" PRIu64 "\n", macaddr);
     return -1;
   }
   
@@ -361,6 +363,54 @@ int _handle_subscribe_request(helium_connection_t *conn,
     free(packet);
   }
   
+  return 0;
+}
+
+int _handle_unsubscribe_request(helium_connection_t *conn,
+                              uint64_t macaddr)
+{
+  char *token = NULL;
+  unsigned int len;
+  hashmap_get(&conn->subscription_map, &macaddr, sizeof(uint64_t), (void**)&token, &len);
+  if (!token) {
+    helium_dbg("unable to find %" PRIu64 " in subscription map", macaddr);
+    return -1;
+  }
+  // remove it from the subscription list
+  hashmap_del(&conn->subscription_map, &macaddr, sizeof(uint64_t));
+  hashmap_del(&conn->token_map, &macaddr, sizeof(uint64_t));
+
+  struct addrinfo *address = NULL;
+  unsigned char *packet = NULL;
+  int err;
+  size_t count;
+
+  count = libhelium_encrypt_packet((unsigned char*)token, (unsigned char*)"", 's', &packet);
+  if (count < 1) {
+    helium_dbg("failed to encrypt unsubscription packet for %" PRIu64 "\n", macaddr);
+    return -1;
+  }
+
+  err = _getdeviceaddr(macaddr, conn->proxy_addr, &address);
+  if (err == 0) {
+    if (conn->proxy_addr != NULL) {
+      // make room for prefixing the MAC onto the packet
+      packet = realloc(packet, count+8);
+      memmove(packet+8, packet, count);
+      memcpy(packet, (void*)&macaddr, 8);
+      count += 8;
+    }
+    uv_buf_t buf = { (char*)packet, count };
+    uv_udp_send_t *send_req = malloc(sizeof(uv_udp_send_t));
+    send_req->data = packet;
+    uv_udp_send(send_req, &conn->udp_handle, &buf, 1, address->ai_addr, _send_callback);
+    helium_dbg("unsubscribed from %" PRIu64 "\n", macaddr);
+    freeaddrinfo(address);
+  } else {
+    helium_dbg("Couldn't get device addr");
+    free(packet);
+  }
+
   return 0;
 }
 
@@ -420,6 +470,7 @@ helium_connection_t *helium_alloc(void)
 
 void helium_free(helium_connection_t *conn)
 {
+	helium_dbg("freeing connection");
   if (conn == NULL) {
     return;
   }
@@ -527,6 +578,23 @@ int helium_subscribe(helium_connection_t *conn, uint64_t macaddr, helium_token_t
   return 0;
 }
 
+int helium_unsubscribe(helium_connection_t *conn, uint64_t macaddr)
+{
+  struct helium_request_s *req = malloc(sizeof(struct helium_request_s));
+
+  req->request_type = UNSUBSCRIBE_REQUEST;
+  req->macaddr = macaddr;
+  req->conn = conn;
+  uv_mutex_lock(&conn->mutex);
+
+  conn->async_handle.data = req;
+  uv_async_send(&conn->async_handle);
+  // wait for the event loop to call sem_post on this semaphore
+  uv_sem_wait(&conn->sem);
+  uv_mutex_unlock(&conn->mutex);
+  return 0;
+}
+
 void *helium_get_context(const helium_connection_t * conn)
 {
   return conn->context;
@@ -579,6 +647,7 @@ int helium_send(helium_connection_t *conn, uint64_t macaddr, helium_token_t toke
 
 int helium_close(helium_connection_t *conn)
 {
+	helium_dbg("closing connection");
   struct helium_request_s *request = calloc(1, sizeof(struct helium_request_s));
   request->conn = conn;
   request->request_type = QUIT_REQUEST;
