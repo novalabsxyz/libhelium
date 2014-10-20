@@ -423,7 +423,10 @@ void helium_free(helium_connection_t *conn)
   if (conn == NULL) {
     return;
   }
-  
+
+  if (uv_loop_alive(conn->loop)) {
+    helium_close(conn);
+  }
   
   free(conn->proxy_addr);
   conn->proxy_addr = NULL;
