@@ -5,6 +5,11 @@
 #include <CUnit/Basic.h>
 #include "helium.h"
 
+typedef struct {
+  char *message;
+  void (*test)(void);
+} test_case;
+
 void test_freeing_null() {
   helium_free(NULL);
 }
@@ -17,6 +22,13 @@ void test_alloc_then_free() {
 int main(int argc, char *argv[])
 {
   CU_pSuite pSuite = NULL;
+  size_t ii;
+  test_case ALL_CASES[2];
+  ALL_CASES[0].message = "helium_free(NULL) should be a no-op";
+  ALL_CASES[0].test = test_freeing_null;
+  ALL_CASES[1].message = "alloc then free should have no footprint";
+  ALL_CASES[1].test = test_alloc_then_free;
+
   
   if (CUE_SUCCESS != CU_initialize_registry()) {
     return CU_get_error();
@@ -29,17 +41,7 @@ int main(int argc, char *argv[])
     return CU_get_error();
   }
 
-  typedef struct {
-    char *message;
-    void (*test)(void);
-  } test_case;
-
-  test_case ALL_CASES[] = {
-    { .message = "helium_free(NULL) should be a no-op", .test = test_freeing_null },
-    { .message = "alloc then free should have no footprint", .test = test_alloc_then_free },
-  };
-
-  for (size_t ii=0; ii < (sizeof(ALL_CASES) / sizeof(test_case)); ii++) {
+  for (ii=0; ii < (sizeof(ALL_CASES) / sizeof(test_case)); ii++) {
     test_case tc = ALL_CASES[ii];
     if (CU_add_test(pSuite, tc.message, tc.test) == NULL) {
       CU_cleanup_registry();

@@ -230,7 +230,7 @@ void _udp_recv_callback(uv_udp_t *handle, ssize_t nread, const uv_buf_t *buf, co
   if (!token) {
     hashmap_get(&conn->subscription_map, &macaddr, sizeof(uint64_t), (void**)&token, &len);
     if (!token) {
-      /*helium_log(LOG_ERR, "couldn't find entry in mac->token map for mac addr %" PRIx64, macaddr);*/
+      helium_dbg("couldn't find entry in mac->token map for mac addr %" PRIx64, macaddr);
       return;
     }
   }
@@ -309,8 +309,8 @@ void _refresh_subscriptions(uv_timer_t *handle) {
     }
     err = _getdeviceaddr(*(uint64_t*)pair->key, conn->proxy_addr, &address);
     if (err == 0) {
-	  uv_buf_t buf;
-	  uv_udp_send_t *send_req;
+      uv_buf_t buf;
+      uv_udp_send_t *send_req;
       if (conn->proxy_addr != NULL) {
         /* make room for prefixing the MAC onto the packet */
         packet = realloc(packet, count+8);
@@ -319,7 +319,7 @@ void _refresh_subscriptions(uv_timer_t *handle) {
         count += 8;
       }
       buf.base = (char*)packet;
-	  buf.len = count;
+      buf.len = count;
       send_req = malloc(sizeof(uv_udp_send_t));
       send_req->data = packet;
       uv_udp_send(send_req, &conn->udp_handle, &buf, 1, address->ai_addr, _send_callback);
@@ -364,8 +364,8 @@ int _handle_subscribe_request(helium_connection_t *conn,
   
   err = _getdeviceaddr(macaddr, conn->proxy_addr, &address);
   if (err == 0) {
-	uv_buf_t buf;
-	uv_udp_send_t *send_req;
+    uv_buf_t buf;
+    uv_udp_send_t *send_req;
     if (conn->proxy_addr != NULL) {
       /* make room for prefixing the MAC onto the packet */
       packet = realloc(packet, count+8);
@@ -374,7 +374,7 @@ int _handle_subscribe_request(helium_connection_t *conn,
       count += 8;
     }
     buf.base = (char*)packet;
-	buf.len = count;
+    buf.len = count;
     send_req = malloc(sizeof(uv_udp_send_t));
     send_req->data = packet;
     uv_udp_send(send_req, &conn->udp_handle, &buf, 1, address->ai_addr, _send_callback);
