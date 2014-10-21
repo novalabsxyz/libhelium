@@ -28,7 +28,7 @@
 #include <stdlib.h>
 #include <math.h>
 
-// iterator stuff
+/* iterator stuff */
 
 typedef struct iterator_t iterator;
 
@@ -71,7 +71,7 @@ struct hashmap_t {
     allocator alloc;
 };
 
-void hashmap_create(hashmap *hashmap, int n_size); // actual size will be 2^n_size
+void hashmap_create(hashmap *hashmap, int n_size); /* actual size will be 2^n_size */
 void hashmap_create_with_allocator(hashmap *hashmap, int n_size, allocator alloc);
 void hashmap_free(hashmap *hashmap);
 unsigned int hashmap_size(const hashmap *hashmap);
@@ -89,4 +89,4 @@ void hashmap_iter_begin(const hashmap *hashmap, iterator *iter);
 int hashmap_delete(hashmap *hashmap, iterator *iter);
 void hashmap_clear(hashmap *hashmap);
 
-#endif // _HASHMAP_H
+#endif /* _HASHMAP_H */

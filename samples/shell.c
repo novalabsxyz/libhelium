@@ -16,10 +16,16 @@ void test_callback(const helium_connection_t *conn, uint64_t sender_mac, char * 
 
 int main(int argc, char *argv[])
 {
-  helium_logging_start();
   char *proxy = NULL;
-  //helium_token_t token = "abcdefghijklmnop";
-  helium_connection_t *conn = helium_alloc();
+  helium_connection_t *conn;
+  uint64_t mac;
+  helium_token_t token;
+  unsigned char token_in[32];
+  char message[1024];
+  int ret;
+
+  helium_logging_start();
+  conn = helium_alloc();
   if (argc == 3 && strcmp("-p", argv[1]) == 0) {
     printf("proxy %s\n", argv[2]);
     proxy = argv[2];
@@ -36,11 +42,6 @@ int main(int argc, char *argv[])
   helium_open(conn, proxy, test_callback);
 #endif
 
-  uint64_t mac;
-  helium_token_t token;
-  unsigned char token_in[32];
-  char message[1024];
-  int ret;
   while(1) {
     ret = scanf("%" PRIx64 " %s %[^\n]", &mac, token_in, message);
     if (ret > 0) {
@@ -53,7 +54,7 @@ int main(int argc, char *argv[])
         helium_dbg("send result %d\n", err);
       }
     } else {
-      // invalid line, consume it
+      /* invalid line, consume it */
       fgets(message, 1024, stdin);
       if (strncmp(message, "QUIT", 4) == 0) {
         printf("quitting\n");

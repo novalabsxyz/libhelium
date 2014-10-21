@@ -14,7 +14,7 @@ set(VERSION "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}")
 add_definitions(-DLIBHELIUM_VERSION="${VERSION}")
 add_definitions(-D_GNU_SOURCE) # you need this or libuv will not be happy
 
-set(CMAKE_C_FLAGS "-Wall -std=c99 -funsigned-char")
+set(CMAKE_C_FLAGS "-Wall -pedantic -Werror -std=c90 -funsigned-char")
 
 find_package(uv)
 find_package(crypto)

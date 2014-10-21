@@ -1,6 +1,4 @@
-// Copyright (c) 2014 Helium Systems, Inc.
-
-#include <uv.h>
+/* Copyright (c) 2014 Helium Systems, Inc. */
 
 #include "helium.h"
 #include "hashmap.h"
@@ -45,7 +43,7 @@ struct helium_request_s {
   uint64_t macaddr;
   helium_token_t token;
   
-  // NULL if a subscribe, unsubscribe, or quit request
+  /* NULL if a subscribe, unsubscribe, or quit request */
   unsigned char *message;
   size_t count;
 };
