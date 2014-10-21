@@ -2,8 +2,10 @@
 
 /* (Someday) cross-platform interface for logging. */
 
+#ifndef _WIN32
 #include <syslog.h>
+#endif
 
 void helium_logging_start();
-void helium_log(int level, const char *format, ...) __attribute__((format(printf, 2, 3)));
-void helium_dbg(const char *format, ...) __attribute__((format(printf, 1, 2)));
+void helium_log(int level, const char *format, ...);
+void helium_dbg(const char *format, ...);

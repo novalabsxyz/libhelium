@@ -22,25 +22,27 @@ void test_callback2(const helium_connection_t *conn, uint64_t sender_mac, char *
 
 int main(int argc, char *argv[])
 {
-  helium_logging_start();
   char *proxy = NULL;
+  helium_connection_t *conn, *conn2;
+  helium_token_t token;
+  unsigned char *token1, *token2;
+  char message[1024];
 
-  helium_connection_t *conn2 = helium_alloc();
+  helium_logging_start();
+  
+  conn2 = helium_alloc();
   helium_open(conn2, proxy, test_callback2);
   
-  helium_connection_t *conn = helium_alloc();
+  conn = helium_alloc();
   helium_open(conn, proxy, test_callback);
 
-  helium_token_t token;
-
-  unsigned char *token1 = (unsigned char*)"vvseLv3rAtsVl2BdnW4S5A==";
-  unsigned char *token2 = (unsigned char*)"WMjvdsPlReLHHAJqnbqvPw==";
+  token1 = (unsigned char*)"vvseLv3rAtsVl2BdnW4S5A==";
+  token2 = (unsigned char*)"WMjvdsPlReLHHAJqnbqvPw==";
 
   helium_base64_token_decode(token1, strlen((char*)token1), token);
   helium_subscribe(conn, 18838586654721, token);
   helium_base64_token_decode(token2, strlen((char*)token2), token);
   helium_subscribe(conn2, 18838586654722, token);
-  char message[1024];
   while(1) {
     fgets(message, 1024, stdin);
     if (strncmp(message, "QUIT", 4) == 0) {

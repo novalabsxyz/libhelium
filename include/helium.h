@@ -8,6 +8,7 @@
  *  @author The Helium team
  */
 
+#define WIN32_LEAN_AND_MEAN
 #include <stdio.h>
 #include <stdint.h>
 #include <uv.h>
@@ -55,7 +56,7 @@ typedef void (^helium_block_t)(const helium_connection_t *conn, uint64_t sender_
     
    The result of this function must be passed to `helium_free`.
 */
-helium_connection_t *helium_alloc(void) __attribute__((malloc));
+helium_connection_t *helium_alloc(void);
 
 /**
    @brief Frees a previously-allocation libhelium connection.

@@ -1,7 +1,5 @@
 /* Copyright (c) 2014 Helium Systems, Inc. */
 
-#include <uv.h>
-
 #include "helium.h"
 #include "hashmap.h"
 

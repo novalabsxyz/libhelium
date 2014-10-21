@@ -27,6 +27,7 @@
 #include <string.h>
 #include <math.h>
 
+
 #define FNV_32_PRIME ((uint32_t)0x01000193)
 #define FNV1_32_INIT ((uint32_t)2166136261)
 #define TINY_MASK(x) (((uint32_t)1<<(x))-1)
@@ -69,9 +70,10 @@ uint32_t fnv_32a_buf(const void *buf, unsigned int len, unsigned int x) {
   * \param alloc Allocation functions
   */
 void hashmap_create_with_allocator(hashmap *hm, int n_size, allocator alloc) {
+	size_t b_size;
     hm->alloc = alloc;
     hm->buckets_x = n_size;
-    size_t b_size = hashmap_size(hm) * sizeof(hashmap_node*);
+    b_size = hashmap_size(hm) * sizeof(hashmap_node*);
     hm->buckets = hm->alloc.cmalloc(b_size);
     memset(hm->buckets, 0, b_size);
     hm->reserved = 0;
@@ -107,7 +109,8 @@ void hashmap_create(hashmap *hm, int n_size) {
 void hashmap_clear(hashmap *hm) {
     hashmap_node *node = NULL;
     hashmap_node *tmp = NULL;
-    for(unsigned int i = 0; i < hashmap_size(hm); i++) {
+	unsigned int i;
+    for(i = 0; i < hashmap_size(hm); i++) {
         node = hm->buckets[i];
         while(node != NULL) {
             tmp = node;
@@ -216,10 +219,10 @@ int hashmap_del(hashmap *hm, const void *key, unsigned int keylen) {
     /* Get node */
     hashmap_node *node = hm->buckets[index];
     hashmap_node *prev = NULL;
+	int found = 0;
     if(node == NULL) return 1;
 
     /* Find the node we want to delete */
-    int found = 0;
     while(node) {
         if(node->pair.keylen == keylen) {
             if(memcmp(node->pair.key, key, keylen) == 0) {
@@ -263,13 +266,14 @@ int hashmap_del(hashmap *hm, const void *key, unsigned int keylen) {
 int hashmap_get(hashmap *hm, const void *key, unsigned int keylen, void **val, unsigned int *vallen) {
     unsigned int index = fnv_32a_buf(key, keylen, hm->buckets_x);
 
+	/* Get node */
+    hashmap_node *node = hm->buckets[index];
+
     /* Set defaults for error cases */
     *val = NULL;
     *vallen = 0;
 
-    /* Get node */
-    hashmap_node *node = hm->buckets[index];
-    if(node == NULL) return 1;
+	if(node == NULL) return 1;
 
     /* Find the node we want */
     while(node) {
@@ -322,6 +326,7 @@ void hashmap_idel(hashmap *hm, unsigned int key) {
   */
 int hashmap_delete(hashmap *hm, iterator *iter) {
     int index = iter->inow - 1;
+	int found = 0;
 
     /* Find correct node */
     hashmap_node *node = hm->buckets[index];
@@ -330,7 +335,6 @@ int hashmap_delete(hashmap *hm, iterator *iter) {
     if(node == NULL || seek == NULL) return 1;
 
     /* Find the node we want to delete */
-    int found = 0;
     while(node) {
         if(node == seek) {
             found = 1;
