@@ -64,6 +64,15 @@ sh autogen.sh
 make ; make install
 ```
 
+### CUnit
+
+libhelium will use cunit if you call `make test` and cunit is available.  On Debian it is simple as
+
+```
+apt-get install libcunit1-dev
+```
+
+Then run `make test` after the cmake and make builds.
 
 building
 ========
@@ -78,6 +87,7 @@ building
 
 testing
 =======
+
 
 The `helium_test` executable listens on stdin for lines of the form `<MAC> <token> <message>`. Sending the single character `'s'` tests the subscription features.
 
