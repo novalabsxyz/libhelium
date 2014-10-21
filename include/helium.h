@@ -17,7 +17,9 @@
 
 const char *libhelium_version();
 
-/* Turns on libhelium logging. */
+/**
+  @brief Turns on libhelium logging.
+*/
 void helium_logging_start(); /* debug */
 
 /**
@@ -27,7 +29,8 @@ void helium_logging_start(); /* debug */
 */
 typedef unsigned char helium_token_t[16];
 
-/* An opaque type encapsulating a UDP connection over the Helium network. */
+/** 
+  @brief An opaque type encapsulating a UDP connection over the Helium network. */
 typedef struct helium_connection_s helium_connection_t;
 
 /**
@@ -40,7 +43,9 @@ typedef struct helium_connection_s helium_connection_t;
 typedef void (*helium_callback_t)(const helium_connection_t *conn, uint64_t sender_mac, char * const message, size_t count);
 
 #if HAVE_BLOCKS
-/* Identical to helium_callback_t, but as a block rather than a function pointer. */
+/**
+  @brief Identical to helium_callback_t, but as a block rather than a function pointer.
+*/
 typedef void (^helium_block_t)(const helium_connection_t *conn, uint64_t sender_mac, char * const message, size_t count);
 #endif
 
