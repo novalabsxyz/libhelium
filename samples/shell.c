@@ -18,7 +18,6 @@ int main(int argc, char *argv[])
 {
   helium_logging_start();
   char *proxy = NULL;
-  //helium_token_t token = "abcdefghijklmnop";
   helium_connection_t *conn = helium_alloc();
   if (argc == 3 && strcmp("-p", argv[1]) == 0) {
     printf("proxy %s\n", argv[2]);
@@ -53,7 +52,7 @@ int main(int argc, char *argv[])
         helium_dbg("send result %d\n", err);
       }
     } else {
-      // invalid line, consume it
+      /* invalid line, consume it */
       fgets(message, 1024, stdin);
       if (strncmp(message, "QUIT", 4) == 0) {
         printf("quitting\n");

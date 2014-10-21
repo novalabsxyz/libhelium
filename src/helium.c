@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-// crypto stuff
+/* crypto stuff */
 #include <openssl/rand.h>
 #include <openssl/evp.h>
 #include <openssl/sha.h>
@@ -18,8 +18,8 @@ const char *libhelium_version()
 }
 
 
-// encrypt a message into a packet
-// this function mallocs its own output buffer into **dst
+/* encrypt a message into a packet
+   this function mallocs its own output buffer into **dst */
 int libhelium_encrypt_packet(const unsigned char *token, const unsigned char *message, char prefix, unsigned char **dst) {
   EVP_CIPHER_CTX *ctx;
   SHA256_CTX sha256;
@@ -27,9 +27,9 @@ int libhelium_encrypt_packet(const unsigned char *token, const unsigned char *me
   int tmplen = 0;
   unsigned char *tmpdst;
   unsigned char iv[12];
-  // not doing a memset here may generate some uninitalized byte warnings in valgrind, but
-  // since openssl mixes the random contents of the buffer into the entropy pool, it is probably ok?
-  //memset(iv, 0, 12);
+  /* not doing a memset here may generate some uninitalized byte warnings in valgrind, but 
+     since openssl mixes the random contents of the buffer into the entropy pool, it is probably ok?*/
+  /*memset(iv, 0, 12); */
   if ((RAND_bytes(iv, 12)) != 1) {
     return -1;
   }
@@ -48,7 +48,7 @@ int libhelium_encrypt_packet(const unsigned char *token, const unsigned char *me
   EVP_EncryptInit_ex(ctx, EVP_aes_128_gcm(), NULL, NULL, NULL);
   EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_SET_IVLEN, sizeof(iv), NULL);
   EVP_EncryptInit_ex(ctx, NULL, NULL, token, iv);
-  // no AAD
+  /* no AAD */
   EVP_EncryptUpdate(ctx, tmpdst, &outlen, (unsigned char*)&prefix, 1);
   tmpdst++;
   EVP_EncryptUpdate(ctx, tmpdst, &outlen, message, strlen((char*)message));
@@ -58,8 +58,8 @@ int libhelium_encrypt_packet(const unsigned char *token, const unsigned char *me
   return outlen+1+16+SHA256_DIGEST_LENGTH+12;
 }
 
-// decrypt a message from a packet
-// this function mallocs its own output buffer into **dst
+/* decrypt a message from a packet
+   this function mallocs its own output buffer into **dst */
 int libhelium_decrypt_packet(const unsigned char *token, const unsigned char *packet, int packetlen, unsigned char **dst) {
   EVP_CIPHER_CTX *ctx;
   int outlen;
@@ -68,7 +68,7 @@ int libhelium_decrypt_packet(const unsigned char *token, const unsigned char *pa
   unsigned char tag[16];
   int ret;
 
-  // pull the IV off the packet
+  /* pull the IV off the packet */
   memcpy(iv, packet, 12);
 
   memcpy(tag, packet+(packetlen-16), 16);
@@ -103,7 +103,7 @@ int _getdeviceaddr(uint64_t macaddr, char *proxy, struct addrinfo **address) {
     if (target == NULL) {
       return -1;
     }
-    // only return ipv6 addresses
+    /* only return ipv6 addresses */
     hints.ai_family = AF_INET6;
   } else {
     helium_dbg("using ipv4 proxy\n");
@@ -143,7 +143,7 @@ void _async_callback(uv_async_t *async)
     result = _handle_quit(conn);
     break;
   case UNSUBSCRIBE_REQUEST:
-    break; // currently not implemented
+    break; /* currently not implemented */
   }
 
   uv_sem_post(&conn->sem);
@@ -190,13 +190,13 @@ void _udp_recv_callback(uv_udp_t *handle, ssize_t nread, const uv_buf_t *buf, co
   char *message = buf->base;
 
   if (conn->proxy_addr == NULL) {
-    // extract from ipv6 peer address
+    /* extract from ipv6 peer address */
     struct sockaddr_in6 *in6addr = (struct sockaddr_in6*)addr;
     memcpy((void*)&macaddr, in6addr->sin6_addr.s6_addr+8, 8);
-    // XXX this is a giant non-portable hack
+    /* XXX this is a giant non-portable hack */
     macaddr = __builtin_bswap64(macaddr);
   } else {
-    // the first 8 bytes are the MAC, little endian
+    /* the first 8 bytes are the MAC, little endian */
     memcpy((void*)&macaddr, buf->base, 8);
     message += 8;
     nread -= 8;
@@ -227,8 +227,8 @@ void _udp_recv_callback(uv_udp_t *handle, ssize_t nread, const uv_buf_t *buf, co
 
 
   if (macaddr & 0x100000000000000) {
-      // multicast bit is set, this is a group
-      // TODO should we also pass the group MAC to the callback?
+      /* multicast bit is set, this is a group */
+      /* TODO should we also pass the group MAC to the callback? */
       helium_dbg("message is from a group\n");
       helium_dbg("Group MAC is %" PRIu64 "\n", macaddr);
       memcpy((void*)&macaddr, out, 8);
@@ -239,8 +239,7 @@ void _udp_recv_callback(uv_udp_t *handle, ssize_t nread, const uv_buf_t *buf, co
 
   helium_dbg("device MAC is %" PRIu64 "\n", macaddr);
 
-  // should we ever call this when nread < 1?
-  //conn->callback(conn, macaddr, (char*)out, res);
+  /* should we ever call this when nread < 1?  */
   uv_work_t *req = malloc(sizeof(uv_work_t));
   struct helium_callback_invocation_s *inc = malloc(sizeof(struct helium_callback_invocation_s));
   inc->conn = conn;
@@ -249,9 +248,7 @@ void _udp_recv_callback(uv_udp_t *handle, ssize_t nread, const uv_buf_t *buf, co
   inc->message = (char*)out;
   req->data = inc;
   uv_queue_work(conn->loop, req, _run_callback, _after_callback);
-  //free(out);
   free(buf->base);
-
 }
 
 #if HAVE_BLOCKS
@@ -291,7 +288,7 @@ void _refresh_subscriptions(uv_timer_t *handle) {
     err = _getdeviceaddr(*(uint64_t*)pair->key, conn->proxy_addr, &address);
     if (err == 0) {
       if (conn->proxy_addr != NULL) {
-        // make room for prefixing the MAC onto the packet
+        /* make room for prefixing the MAC onto the packet */
         packet = realloc(packet, count+8);
         memmove(packet+8, packet, count);
         memcpy(packet, pair->key, 8);
@@ -311,10 +308,10 @@ void _refresh_subscriptions(uv_timer_t *handle) {
 
 int _handle_quit(helium_connection_t *conn)
 {
-  // stop UDP and the resubscription timer
+  /* stop UDP and the resubscription timer */
   uv_udp_recv_stop(&conn->udp_handle);
   uv_timer_stop(&conn->subscription_timer);
-  // close all the handles
+  /* close all the handles */
   uv_close((uv_handle_t*)&conn->udp_handle, NULL);
   uv_close((uv_handle_t*)&conn->subscription_timer, NULL);
   uv_close((uv_handle_t*)&conn->async_handle, NULL);
@@ -326,15 +323,14 @@ int _handle_subscribe_request(helium_connection_t *conn,
                               uint64_t macaddr,
                               helium_token_t token)
 {
-  // keep track of the token, so we can decrypt replies
-    hashmap_put(&conn->subscription_map, &macaddr, sizeof(uint64_t), token, sizeof(helium_token_t));
-
+  /* keep track of the token, so we can decrypt replies */
+  hashmap_put(&conn->subscription_map, &macaddr, sizeof(uint64_t), token, sizeof(helium_token_t));
 
   struct addrinfo *address = NULL;
   unsigned char *packet = NULL;
   int err;
   size_t count;
-  
+
   count = libhelium_encrypt_packet(token, (unsigned char*)"", 's', &packet);
   if (count < 1) {
     helium_dbg("failed to encrypt ubscription packet for %" PRIu64 "\n", macaddr);
@@ -344,7 +340,7 @@ int _handle_subscribe_request(helium_connection_t *conn,
   err = _getdeviceaddr(macaddr, conn->proxy_addr, &address);
   if (err == 0) {
     if (conn->proxy_addr != NULL) {
-      // make room for prefixing the MAC onto the packet
+      /* make room for prefixing the MAC onto the packet */
       packet = realloc(packet, count+8);
       memmove(packet+8, packet, count);
       memcpy(packet, (void*)&macaddr, 8);
@@ -370,7 +366,7 @@ int _handle_send_request(helium_connection_t *conn,
                          unsigned char *message,
                          size_t count)
 {
-  // keep track of the token, so we can decrypt replies
+  /* keep track of the token, so we can decrypt replies */
   hashmap_put(&conn->token_map, &macaddr, sizeof(uint64_t), token, sizeof(helium_token_t));
 
   struct addrinfo *address = NULL;
@@ -381,7 +377,7 @@ int _handle_send_request(helium_connection_t *conn,
   }
 
   if (conn->proxy_addr != NULL) {
-    // make room for prefixing the MAC onto the packet
+    /* make room for prefixing the MAC onto the packet */
     message = realloc(message, count+8);
     memmove(message+8, message, count);
     memcpy(message, (void*)&macaddr, 8);
@@ -524,7 +520,7 @@ int helium_subscribe(helium_connection_t *conn, uint64_t macaddr, helium_token_t
 
   conn->async_handle.data = req;
   uv_async_send(&conn->async_handle);
-  // wait for the event loop to call sem_post on this semaphore
+  /* wait for the event loop to call sem_post on this semaphore */
   uv_sem_wait(&conn->sem);
   uv_mutex_unlock(&conn->mutex);
   return 0;
@@ -544,7 +540,7 @@ void helium_set_context(helium_connection_t *conn, void *newcontext)
 
 int helium_open_b(helium_connection_t *conn, char *proxy_addr, helium_block_t block)
 {
-  conn->callback_block = block; // Block_copy(block) here??
+  conn->callback_block = block; /* Block_copy(block) here?? */
   return helium_init(conn, proxy_addr, _block_callback);
 }
 
@@ -573,7 +569,7 @@ int helium_send(helium_connection_t *conn, uint64_t macaddr, helium_token_t toke
   conn->async_handle.data = (void*)req;
   uv_async_send(&conn->async_handle);
 
-  // wait for the event loop to call sem_post on this semaphore
+  /* wait for the event loop to call sem_post on this semaphore */
   uv_sem_wait(&conn->sem);
   uv_mutex_unlock(&conn->mutex);
 
@@ -589,11 +585,11 @@ int helium_close(helium_connection_t *conn)
   uv_mutex_lock(&conn->mutex);
   conn->async_handle.data = request;
   uv_async_send(&conn->async_handle);
-  // wait for the event loop to call sem_post on this semaphore
+  /* wait for the event loop to call sem_post on this semaphore */
   uv_sem_wait(&conn->sem);
   uv_mutex_unlock(&conn->mutex);
 
-  // the quit message will cause the uv_loop to stop running and make the thread exit
+  /* the quit message will cause the uv_loop to stop running and make the thread exit */
   uv_thread_join(conn->thread);
 
   return 0;
@@ -614,7 +610,7 @@ int helium_base64_token_decode(const unsigned char *input, int length, helium_to
   BIO_set_flags(b64, BIO_FLAGS_BASE64_NO_NL);
   bmem = BIO_new_mem_buf((void *)input, length);
   decoder = BIO_push(b64, bmem);
-  // cast to void to avoid unused var warnings
+  /* cast to void to avoid unused var warnings */
   (void)BIO_flush(decoder);
   int readlen = BIO_read(decoder, token_out, length);
   BIO_free_all(b64);

@@ -1,6 +1,6 @@
-// Copyright (c) Helium Systems, 2014.
+/* Copyright (c) Helium Systems, 2014. */
 
-// (Someday) cross-platform interface for logging.
+/* (Someday) cross-platform interface for logging. */
 
 #include <syslog.h>
 

@@ -1,4 +1,4 @@
-// logging.c
+/* logging.c */
 
 #include <stdlib.h>
 #include <syslog.h>
