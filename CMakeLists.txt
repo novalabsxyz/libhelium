@@ -49,9 +49,6 @@ set(HELIUM_HEADER_FILES
   include/helium_logging.h
   include/helium.h)
 
-set(HELIUM_TEST_FILES
-  tests/test_basic.c)
-
 if(CMAKE_C_COMPILER_ID MATCHES "clang")
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fblocks -fsanitize=undefined")
   add_definitions(-DHAVE_BLOCKS=1)
@@ -104,11 +101,17 @@ target_link_libraries(multiloop_test PUBLIC ${SAMPLE_LIBRARIES})
 
 if(CUNIT_FOUND)
   enable_testing()
-  add_executable(test_suite ${HELIUM_TEST_FILES})
-  add_dependencies(test_suite helium)
-  target_include_directories(test_suite PUBLIC ${SAMPLE_INCLUDES})
-  target_link_libraries(test_suite PUBLIC ${TEST_LIBRARIES})
-  add_test(test_basic test_suite)
+  add_executable(test_basic tests/test_basic.c)
+  add_dependencies(test_basic helium)
+  target_include_directories(test_basic PUBLIC ${SAMPLE_INCLUDES})
+  target_link_libraries(test_basic PUBLIC ${TEST_LIBRARIES})
+  add_test(test_basic test_basic)
+
+  add_executable(test_base64 tests/test_base64.c)
+  add_dependencies(test_base64 helium)
+  target_include_directories(test_base64 PUBLIC ${SAMPLE_INCLUDES})
+  target_link_libraries(test_base64 PUBLIC ${TEST_LIBRARIES})
+  add_test(test_base64 test_base64)
 endif(CUNIT_FOUND)
 
 find_package(Doxygen)
