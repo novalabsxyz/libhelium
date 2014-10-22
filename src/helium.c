@@ -470,7 +470,7 @@ helium_connection_t *helium_alloc(void)
 
 void helium_free(helium_connection_t *conn)
 {
-	helium_dbg("freeing connection");
+  helium_dbg("freeing connection");
   if (conn == NULL) {
     return;
   }
