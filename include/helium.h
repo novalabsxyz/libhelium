@@ -110,6 +110,15 @@ int helium_open_b(helium_connection_t *conn, char *proxy_addr, helium_block_t ca
 int helium_subscribe(helium_connection_t *conn, uint64_t macaddr, helium_token_t token);
 
 /**
+   @brief Unsubscribe from messages from the specified device.
+   @param conn The connection which will receive messages
+   @param macaddr The MAC address of the device to subscribe to
+   @return 0 on success.
+*/
+int helium_unsubscribe(helium_connection_t *conn, uint64_t macaddr);
+
+
+/**
    @brief Send a given device a message.
    @param conn The connection that will send this message
    @param macaddr The MAC address of the destination device
