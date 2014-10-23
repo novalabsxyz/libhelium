@@ -26,6 +26,8 @@ void helium_logging_start(); /* debug */
 /**
    @brief The type of Helium security tokens.
 
+   Tokens are 16 byte AES-128 keys, in binary form.
+
    Please note that tokens are not null-terminated and may contain NUL characters.
 */
 typedef unsigned char helium_token_t[16];
