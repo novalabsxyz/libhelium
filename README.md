@@ -6,27 +6,29 @@ low-level, cross-platform interface to Helium routers and bridges
 Example
 =======
 
-    #include <helium.h>
+~~~c
+#include <helium.h>
 
-    // create a new connection
-    helium_collection_t *conn = helium_alloc(NULL);
+// create a new connection
+helium_collection_t *conn = helium_alloc(NULL);
 
-    // associate it with a proxy (if you don't have direct ipv6 connectivity) and callback function pointer
-    helium_open(conn, NULL, my_callback_function);
+// associate it with a proxy (if you don't have direct ipv6 connectivity) and callback function pointer
+helium_open(conn, NULL, my_callback_function);
 
-    // you can also use block syntax if you have built libhelium with block support
-    helium_open_b(conn, NULL, ^(const helium_connection_t *conn, uint64_t mac, char *msg, size_t n) {
-        printf("Received the string '%s' from MAC address %lX", msg, mac);
-    });
+// you can also use block syntax if you have built libhelium with block support
+helium_open_b(conn, NULL, ^(const helium_connection_t *conn, uint64_t mac, char *msg, size_t n) {
+		printf("Received the string '%s' from MAC address %lX", msg, mac);
+		});
 
-    // subscribe to events from a given MAC address
-    helium_subscribe(conn, 0x0000112233440001, "magic_helium_token");
+// subscribe to events from a given MAC address
+helium_subscribe(conn, 0x0000112233440001, "magic_helium_token");
 
-    // send data to a device at a given mac address
-    helium_send(conn, 0x0000112233440001, "magic_helium_token", "Main screen turn on", strlen("Main screen turn on"));
+// send data to a device at a given mac address
+helium_send(conn, 0x0000112233440001, "magic_helium_token", "Main screen turn on", strlen("Main screen turn on"));
 
-    // unsubscribe from a device if you don't want to see any more events from it
-    helium_unsubscribe(conn, 0x0000112233440001);
+// unsubscribe from a device if you don't want to see any more events from it
+helium_unsubscribe(conn, 0x0000112233440001);
+~~~
 
 Requirements
 ============
@@ -70,9 +72,7 @@ To build from source:
 
 libhelium will use cunit if you call `make test` and cunit is available.  On Debian it is simple as
 
-```
-apt-get install libcunit1-dev
-```
+    apt-get install libcunit1-dev
 
 Then run `make test` after the cmake and make builds.
 
