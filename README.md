@@ -108,7 +108,7 @@ The `shell` executable listens on stdin for lines of the form `<MAC> <token> <me
 For example (using a ipv4->ipv6 proxy at r01.foo.example.io):
 
 ```
-./helium_test -p r01.foo.example.io
+./shell -p r01.foo.example.io
 ...
 00212effffffffff 29dcxtSTIsyGFZ6Tffffff== s
 ```
