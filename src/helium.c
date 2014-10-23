@@ -33,7 +33,7 @@ int libhelium_encrypt_packet(const unsigned char *token, const unsigned char *me
   unsigned char *tmpdst;
   unsigned char iv[12];
   size_t len;
-  /* not doing a memset here may generate some uninitalized byte warnings in valgrind, but 
+  /* not doing a memset here may generate some uninitalized byte warnings in valgrind, but
      since openssl mixes the random contents of the buffer into the entropy pool, it is probably ok?*/
   /*memset(iv, 0, 12); */
   if ((RAND_bytes(iv, 12)) != 1) {
@@ -140,7 +140,6 @@ void _async_callback(uv_async_t *async)
 
   conn = request->conn;
   macaddr = request->macaddr;
-  result = 0;
 
   assert(conn != NULL);
 
@@ -350,12 +349,12 @@ int _handle_subscribe_request(helium_connection_t *conn,
                               uint64_t macaddr,
                               helium_token_t token)
 {
-  
+
   struct addrinfo *address = NULL;
   unsigned char *packet = NULL;
   int err;
   size_t count;
-  
+
   /* keep track of the token, so we can decrypt replies */
   hashmap_put(&conn->subscription_map, &macaddr, sizeof(uint64_t), token, sizeof(helium_token_t));
 
@@ -364,7 +363,7 @@ int _handle_subscribe_request(helium_connection_t *conn,
     helium_dbg("failed to encrypt subscription packet for %" PRIu64 "\n", macaddr);
     return -1;
   }
-  
+
   err = _getdeviceaddr(macaddr, conn->proxy_addr, &address);
   if (err == 0) {
     uv_buf_t buf;
@@ -387,7 +386,7 @@ int _handle_subscribe_request(helium_connection_t *conn,
     helium_dbg("Couldn't get device addr");
     free(packet);
   }
-  
+
   return 0;
 }
 
@@ -403,13 +402,13 @@ int _handle_unsubscribe_request(helium_connection_t *conn,
   uv_buf_t buf;
   uv_udp_send_t *send_req = NULL;
 
-  
+
   hashmap_get(&conn->subscription_map, &macaddr, sizeof(uint64_t), (void**)&token, &len);
   if (!token) {
     helium_dbg("unable to find %" PRIu64 " in subscription map", macaddr);
     return -1;
   }
-  
+
   /* remove it from the subscription list */
   hashmap_del(&conn->subscription_map, &macaddr, sizeof(uint64_t));
   hashmap_del(&conn->token_map, &macaddr, sizeof(uint64_t));
@@ -510,17 +509,17 @@ void helium_free(helium_connection_t *conn)
   iterator it;
   hashmap_pair *pair = NULL;
   int closed;
-  
+
   helium_dbg("freeing connection");
-  
+
   if (conn == NULL) {
     return;
   }
-  
+
   if (uv_loop_alive(conn->loop)) {
     helium_close(conn);
   }
-  
+
   free(conn->proxy_addr);
   conn->proxy_addr = NULL;
 
@@ -608,7 +607,7 @@ int helium_open(helium_connection_t *conn, const char *proxy_addr, helium_callba
 int helium_subscribe(helium_connection_t *conn, uint64_t macaddr, helium_token_t token)
 {
   struct helium_request_s *req = malloc(sizeof(struct helium_request_s));
-  
+
   req->request_type = SUBSCRIBE_REQUEST;
   req->macaddr = macaddr;
   memcpy(req->token, token, 16);
@@ -673,7 +672,7 @@ int helium_send(helium_connection_t *conn, uint64_t macaddr, helium_token_t toke
   req->request_type = SEND_REQUEST;
   req->macaddr = macaddr;
   memcpy(req->token, token, 16);
-  
+
   req->message = packet;
   req->count = count;
   req->conn = conn;
@@ -694,7 +693,7 @@ int helium_send(helium_connection_t *conn, uint64_t macaddr, helium_token_t toke
 int helium_close(helium_connection_t *conn)
 {
   struct helium_request_s *request = calloc(1, sizeof(struct helium_request_s));
-  
+
   helium_dbg("closing connection");
   request->conn = conn;
   request->request_type = QUIT_REQUEST;
