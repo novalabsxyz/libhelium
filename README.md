@@ -85,6 +85,8 @@ building
   make
 ```
 
+If you want to build the documentation, you'll need [Doxygen](http://www.stack.nl/~dimitri/doxygen/). Run `make doc` to build it; the output will be placed in an `html/` folder.
+
 testing
 =======
 
