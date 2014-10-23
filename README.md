@@ -17,8 +17,8 @@ helium_open(conn, NULL, my_callback_function);
 
 // you can also use block syntax if you have built libhelium with block support
 helium_open_b(conn, NULL, ^(const helium_connection_t *conn, uint64_t mac, char *msg, size_t n) {
-		printf("Received the string '%s' from MAC address %lX", msg, mac);
-		});
+	printf("Received the string '%s' from MAC address %lX", msg, mac);
+});
 
 // subscribe to events from a given MAC address
 helium_subscribe(conn, 0x0000112233440001, "magic_helium_token");
