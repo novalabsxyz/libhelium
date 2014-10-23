@@ -1,9 +1,9 @@
-libhelium
+Libhelium
 =========
 
 low-level, cross-platform interface to Helium routers and bridges
 
-example
+Example
 =======
 
 ```c
@@ -12,16 +12,25 @@ example
 // create a new connection
 helium_collection_t *conn = helium_alloc(NULL);
 
-// associate it with a callback (with function pointers or, if you're fancy C/C++ lambdas)
-helium_open_b(conn, ^(const helium_connection_t *conn, uint64_t mac, char *msg, size_t n) {
+// associate it with a proxy (if you don't have direct ipv6 connectivity) and callback function pointer
+helium_open(conn, NULL, my_callback_function);
+
+// you can also use block syntax if you have built libhelium with block support
+helium_open_b(conn, NULL, ^(const helium_connection_t *conn, uint64_t mac, char *msg, size_t n) {
     printf("Received the string '%s' from MAC address %lX", msg, mac);
 });
 
 // subscribe to events from a given MAC address
 helium_subscribe(conn, 0x0000112233440001, "magic_helium_token");
+
+// send data to a device at a given mac address
+helium_send(conn, 0x0000112233440001, "magic_helium_token", "Main screen turn on", strlen("Main screen turn on"));
+
+// unsubscribe from a device if you don't want to see any more events from it
+helium_unsubscribe(conn, 0x0000112233440001);
 ```
 
-requirements
+Requirements
 ============
 
 libhelium depends on [libuv](https://github.com/joyent/libuv) (>= 0.11.29) for cross-platform network functionality and OpenSSL (>= 1.0.1) for required cipher suites. Optional unit test infrastructure is provided by [cunit](http://cunit.sourceforge.net).
@@ -61,7 +70,8 @@ git clone https://github.com/joyent/libuv
 cd libuv
 sh autogen.sh
 ./configure
-make ; make install
+make
+make install
 ```
 
 ### CUnit
@@ -74,7 +84,7 @@ apt-get install libcunit1-dev
 
 Then run `make test` after the cmake and make builds.
 
-building
+Building
 ========
 
 
@@ -85,15 +95,17 @@ building
   make
 ```
 
+### Documentation
+
 If you want to build the documentation, you'll need [Doxygen](http://www.stack.nl/~dimitri/doxygen/). Run `make doc` to build it; the output will be placed in an `html/` folder.
 
-testing
+Testing
 =======
 
 
-The `helium_test` executable listens on stdin for lines of the form `<MAC> <token> <message>`. Sending the single character `'s'` tests the subscription features.
+The `shell` executable listens on stdin for lines of the form `<MAC> <token> <message>`. Sending the single character `'s'` tests the subscription features.
 
-For example:
+For example (using a ipv4->ipv6 proxy at r01.foo.example.io):
 
 ```
 ./helium_test -p r01.foo.example.io
@@ -101,9 +113,9 @@ For example:
 00212effffffffff 29dcxtSTIsyGFZ6Tffffff== s
 ```
 
-will subscribe you to messages from device 00212effffffffff that is being routed through r01.
+will subscribe you to messages from device 00212effffffffff that is being proxied through r01.
 
-info
+Info
 ====
 
 libhelium is copyright (c) Helium Systems, Inc. and distributed to the public under the terms of the MIT license.
