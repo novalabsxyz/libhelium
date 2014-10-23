@@ -88,7 +88,7 @@ int helium_open(helium_connection_t *conn, const char *proxy_addr, helium_callba
 
 /**
    @brief Closes a helium connection.
-   @param The connection to close.
+   @param conn The connection to close.
    @return 0 on success, `UV_EALREADY` if the connection is already open.
 */
 int helium_close(helium_connection_t *conn);
@@ -151,7 +151,7 @@ void *helium_get_context(const helium_connection_t *conn);
    @param length The length of `input`
    @param token The token into which to decode
 */
-int helium_base64_token_decode(const unsigned char *input, int length, helium_token_t outbuf);
+int helium_base64_token_decode(const unsigned char *input, int length, helium_token_t token);
 
 
 #endif /* HELIUM_API_H */
