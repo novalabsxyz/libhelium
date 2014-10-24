@@ -81,9 +81,15 @@ message("HELIUM_LIBS ARE ${HELIUM_LIBS}")
 add_library(helium SHARED ${HELIUM_SOURCE_FILES})
 if(WIN32)
 	generate_export_header(helium)
+else()
+	add_library(heliumStatic STATIC ${HELIUM_SOURCE_FILES})
+	set_target_property(heliumStatic, PROPERTIES OUTPUT_NAME helium)
+	target_include_directories(heliumStatic PUBLIC ${HELIUM_INCLUDES})
+	target_link_libraries(heliumStatic PUBLIC ${HELIUM_LIBS})
 endif()
 target_include_directories(helium PUBLIC ${HELIUM_INCLUDES})
 target_link_libraries(helium PUBLIC ${HELIUM_LIBS})
+
 
 # fPIC is needed to link a static lib to a shared object
 target_compile_options(helium PUBLIC "-fPIC")
