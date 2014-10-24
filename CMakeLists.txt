@@ -3,6 +3,7 @@ project(libhelium)
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake-scripts)
 
 include(CheckIncludeFiles)
+include(CheckFunctionExists)
 
 # Build with blocks by default. If you don't have clang it'll whine at you.
 option(BLOCKS "BLOCKS" ON)
