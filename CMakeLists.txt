@@ -49,7 +49,10 @@ endif(BLOCKS AND BLOCKS_FOUND)
 set(HELIUM_SOURCE_FILES
   src/logging.c
   src/hashmap.c
-  src/helium.c)
+  src/helium.c
+  include/helium.h
+  include/helium_logging.h
+  include/helium_internal.h)
 
 set(HELIUM_HEADER_FILES
   include/helium_logging.h
@@ -77,7 +80,7 @@ message("HELIUM_LIBS ARE ${HELIUM_LIBS}")
 
 add_library(helium SHARED ${HELIUM_SOURCE_FILES})
 if(WIN32)
-	generate_export_header(helium)# EXPORT_FILE_NAME include/helium.h EXPORT_FILE_NAME include/helium_logging.h)
+	generate_export_header(helium)
 endif()
 target_include_directories(helium PUBLIC ${HELIUM_INCLUDES})
 target_link_libraries(helium PUBLIC ${HELIUM_LIBS})
