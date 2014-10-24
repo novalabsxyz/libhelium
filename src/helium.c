@@ -108,7 +108,7 @@ int _getdeviceaddr(uint64_t macaddr, char *proxy, struct addrinfo **address) {
   if (proxy == NULL) {
     /* TODO make the DNS suffix configurable */
     target = malloc(16+12+1); /* 16 for the mac address, 12 for .d.helium.io and 1 for NUL */
-    snprintf(target, 16+12+1, "%" PRIX64 ".d.helium.io", macaddr);
+    sprintf(target, 16+12+1, "%" PRIX64 ".d.helium.io", macaddr);
     helium_dbg("looking up %s", target);
     if (target == NULL) {
       return -1;

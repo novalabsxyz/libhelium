@@ -10,8 +10,8 @@
 
 void test_callback(const helium_connection_t *conn, uint64_t sender_mac, char * const message, size_t count)
 {
-  helium_dbg("Function-pointer callback got %s %zd\n", message, count);
-  helium_dbg("Mac address is %" PRIu64 "\n", sender_mac);
+  printf("Function-pointer callback got %s %zd\n", message, count);
+  printf("Mac address is %" PRIu64 "\n", sender_mac);
 }
 
 int main(int argc, char *argv[])
@@ -24,7 +24,6 @@ int main(int argc, char *argv[])
   char message[1024];
   int ret;
 
-  helium_logging_start();
   conn = helium_alloc();
   if (argc == 3 && strcmp("-p", argv[1]) == 0) {
     printf("proxy %s\n", argv[2]);
@@ -36,7 +35,7 @@ int main(int argc, char *argv[])
 
 #if HAVE_BLOCKS
   helium_open_b(conn, proxy, ^(const helium_connection_t *conn, uint64_t mac, char *msg, size_t n) {
-      helium_dbg("Block callback got %zu bytes from message %s", n, msg);
+      printf("Block callback got %zu bytes from message %s\n", n, msg);
   });
 #else
   helium_open(conn, proxy, test_callback);
@@ -48,13 +47,13 @@ int main(int argc, char *argv[])
       helium_base64_token_decode(token_in, strlen((char*)token_in), token);
       if (strncmp("s", message, 1) == 0) {
         int  err = helium_subscribe(conn, mac, token);
-        helium_dbg("subscribe result %d\n", err);
+        printf("subscribe result %d\n", err);
       } else if (strncmp("u", message, 1) == 0) {
         int  err = helium_unsubscribe(conn, mac);
-        helium_dbg("unsubscribe result %d\n", err);
+        printf("unsubscribe result %d\n", err);
       } else {
         int  err = helium_send(conn, mac, token, (unsigned char*)message, strlen(message));
-        helium_dbg("send result %d\n", err);
+        printf("send result %d\n", err);
       }
     } else {
       /* invalid line, consume it */

@@ -16,12 +16,22 @@
 #ifndef HELIUM_API_H
 #define HELIUM_API_H
 
+#ifdef _WIN32
+#  ifdef helium_EXPORTS
+#    define MODULE_API __declspec(dllexport)
+#  else
+#    define MODULE_API __declspec(dllimport)
+#  endif
+#else
+#  define MODULE_API
+#endif
+
 const char *libhelium_version();
 
 /**
   @brief Turns on libhelium logging.
 */
-void helium_logging_start(); /* debug */
+MODULE_API void helium_logging_start(); /* debug */
 
 /**
    @brief The type of Helium security tokens.
@@ -58,7 +68,7 @@ typedef void (^helium_block_t)(const helium_connection_t *conn, uint64_t sender_
     
    The result of this function must be passed to `helium_free`.
 */
-helium_connection_t *helium_alloc(void);
+MODULE_API helium_connection_t *helium_alloc(void);
 
 /**
    @brief Frees a previously-allocation libhelium connection.
@@ -67,7 +77,7 @@ helium_connection_t *helium_alloc(void);
 
    If `conn` is `NULL`, this function has no effect.
 */
-void helium_free(helium_connection_t *conn);
+MODULE_API void helium_free(helium_connection_t *conn);
 
 
 /**
@@ -84,14 +94,14 @@ uv_loop_t *helium_default_loop(void);
    @param proxy_addr An optional IPv4 proxy to use. If `NULL`, IPv6 is used.
    @param callback A function pointer that will be invoked when this connection receives data.
 */
-int helium_open(helium_connection_t *conn, const char *proxy_addr, helium_callback_t callback);
+MODULE_API int helium_open(helium_connection_t *conn, const char *proxy_addr, helium_callback_t callback);
 
 /**
    @brief Closes a helium connection.
    @param conn The connection to close.
    @return 0 on success, `UV_EALREADY` if the connection is already open.
 */
-int helium_close(helium_connection_t *conn);
+MODULE_API int helium_close(helium_connection_t *conn);
 
 #if HAVE_BLOCKS
 /**
@@ -109,7 +119,7 @@ int helium_open_b(helium_connection_t *conn, char *proxy_addr, helium_block_t ca
    @param token The security token of this device
    @return 0 on success.
 */
-int helium_subscribe(helium_connection_t *conn, uint64_t macaddr, helium_token_t token);
+MODULE_API int helium_subscribe(helium_connection_t *conn, uint64_t macaddr, helium_token_t token);
 
 /**
    @brief Unsubscribe from messages from the specified device.
@@ -117,7 +127,7 @@ int helium_subscribe(helium_connection_t *conn, uint64_t macaddr, helium_token_t
    @param macaddr The MAC address of the device to subscribe to
    @return 0 on success.
 */
-int helium_unsubscribe(helium_connection_t *conn, uint64_t macaddr);
+MODULE_API int helium_unsubscribe(helium_connection_t *conn, uint64_t macaddr);
 
 
 /**
@@ -129,21 +139,21 @@ int helium_unsubscribe(helium_connection_t *conn, uint64_t macaddr);
    @param count The number of characters to send.
    @return 0 on success.
 */
-int helium_send(helium_connection_t *conn, uint64_t macaddr, helium_token_t token, unsigned char *message, size_t count);
+MODULE_API int helium_send(helium_connection_t *conn, uint64_t macaddr, helium_token_t token, unsigned char *message, size_t count);
 
 /**
    @brief Associate an arbitrary datum with this connection.
    @param conn The target connection
    @param context An arbitrary pointer
 */
-void helium_set_context(helium_connection_t *conn, void *context);
+MODULE_API void helium_set_context(helium_connection_t *conn, void *context);
 
 /**
    @brief Retrieve the datum associated with the provided connection.
    @param conn The connection to query
    @return The associated value, or NULL if it never set
 */
-void *helium_get_context(const helium_connection_t *conn);
+MODULE_API void *helium_get_context(const helium_connection_t *conn);
 
 /**
    @brief Decodes a Helium token from the provided base64 string.
@@ -151,7 +161,7 @@ void *helium_get_context(const helium_connection_t *conn);
    @param length The length of `input`
    @param token The token into which to decode
 */
-int helium_base64_token_decode(const unsigned char *input, int length, helium_token_t token);
+MODULE_API int helium_base64_token_decode(const unsigned char *input, int length, helium_token_t token);
 
 
 #endif /* HELIUM_API_H */

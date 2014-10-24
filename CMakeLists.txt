@@ -14,7 +14,9 @@ set(VERSION "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}")
 add_definitions(-DLIBHELIUM_VERSION="${VERSION}")
 add_definitions(-D_GNU_SOURCE) # you need this or libuv will not be happy
 
-set(CMAKE_C_FLAGS "-Wall -pedantic -Werror -std=c90 -funsigned-char -Wno-long-long")
+if((${CMAKE_C_COMPILER_ID} STREQUAL "Clang") OR (${CMAKE_C_COMPILER_ID} STREQUAL "GNU")) 
+  set(CMAKE_C_FLAGS "-Wall -pedantic -Werror -std=c90 -funsigned-char -Wno-long-long")
+endif((${CMAKE_C_COMPILER_ID} STREQUAL "Clang") OR (${CMAKE_C_COMPILER_ID} STREQUAL "GNU"))
 
 find_package(uv)
 find_package(openssl)
@@ -60,10 +62,23 @@ else()
   add_definitions(-DHAVE_BLOCKS=0)
 endif(CMAKE_C_COMPILER_ID MATCHES "clang")
 
+if(WIN32) 
+	include(GenerateExportHeader)
+	set(HELIUM_LIBS ${HELIUM_LIBS} ws2_32 psapi iphlpapi)
+endif()
+
+if(MSVC)
+	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /NODEFAULTLIB:LIBCMTD.lib")
+	set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /NODEFAULTLIB:LIBCMTD.lib")
+endif()
+
 message("HELIUM_INCLUDES are ${HELIUM_INCLUDES}")
 message("HELIUM_LIBS ARE ${HELIUM_LIBS}")
 
-add_library(helium STATIC ${HELIUM_SOURCE_FILES})
+add_library(helium SHARED ${HELIUM_SOURCE_FILES})
+if(WIN32)
+	generate_export_header(helium)# EXPORT_FILE_NAME include/helium.h EXPORT_FILE_NAME include/helium_logging.h)
+endif()
 target_include_directories(helium PUBLIC ${HELIUM_INCLUDES})
 target_link_libraries(helium PUBLIC ${HELIUM_LIBS})
 
@@ -80,14 +95,16 @@ set(SAMPLE_INCLUDES
   ${CRYPTO_INCLUDE_DIR})
 
 set(SAMPLE_LIBRARIES
-  ${CMAKE_CURRENT_BINARY_DIR}/libhelium.a
   ${OPENSSL_LIBRARIES}
   ${UV_LIBRARIES}
   ${CRYPTO_LIBRARIES})
 
 IF(UNIX)
-  set(SAMPLE_LIBRARIES ${SAMPLE_LIBRARIES} m)
+  set(SAMPLE_LIBRARIES ${SAMPLE_LIBRARIES} m ${CMAKE_CURRENT_BINARY_DIR}/libhelium.a)
 ENDIF(UNIX)
+if(WIN32)
+	set(SAMPLE_LIBRARIES ${SAMPLE_LIBRARIES} Debug/helium)
+endif()
 
 set(TEST_LIBRARIES
   ${CUNIT_LIBRARY}
