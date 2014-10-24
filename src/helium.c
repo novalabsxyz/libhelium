@@ -498,6 +498,9 @@ helium_connection_t *helium_alloc(void)
   hashmap_create(&conn->token_map, 8);
   hashmap_create(&conn->subscription_map, 8);
 
+  uv_sem_init(&conn->sem, 0);
+  uv_mutex_init(&conn->mutex);
+
   uv_loop_init(conn->loop);
   uv_thread_create(conn->thread, _run_uv_loop, conn);
 
@@ -561,8 +564,6 @@ int helium_open(helium_connection_t *conn, const char *proxy_addr, helium_callba
 
   uv_async_init(conn->loop, &conn->async_handle, _async_callback);
   uv_timer_init(conn->loop, &conn->subscription_timer);
-  uv_sem_init(&conn->sem, 0);
-  uv_mutex_init(&conn->mutex);
   conn->subscription_timer.data = conn;
   uv_timer_start(&conn->subscription_timer, _refresh_subscriptions, 30000, 30000);
   err = uv_udp_init(conn->loop, &conn->udp_handle);
