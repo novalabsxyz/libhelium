@@ -161,6 +161,10 @@ void _async_callback(uv_async_t *async)
 
   uv_sem_post(&conn->sem);
 
+  if (result != 0) {
+    helium_dbg("Request %p, of type %d, failed!", (void *)request, (int)request->request_type);
+  }
+
   free(request);
 }
 
