@@ -525,7 +525,7 @@ static LDOUBLE mypow10(int);
 extern int errno;
 
 int
-rpl_vsnprintf(char *str, size_t size, const char *format, va_list args)
+vsnprintf(char *str, size_t size, const char *format, va_list args)
 {
 	LDOUBLE fvalue;
 	INTMAX_T value;
@@ -1485,7 +1485,7 @@ mymemcpy(void *dst, void *src, size_t len)
 #endif	/* NEED_MYMEMCPY */
 
 int
-rpl_vasprintf(char **ret, const char *format, va_list ap)
+vasprintf(char **ret, const char *format, va_list ap)
 {
 	size_t size;
 	int len;
@@ -1503,10 +1503,10 @@ rpl_vasprintf(char **ret, const char *format, va_list ap)
 #if !HAVE_SNPRINTF
 #if HAVE_STDARG_H
 int
-rpl_snprintf(char *str, size_t size, const char *format, ...)
+snprintf(char *str, size_t size, const char *format, ...)
 #else
 int
-rpl_snprintf(va_alist) va_dcl
+snprintf(va_alist) va_dcl
 #endif	/* HAVE_STDARG_H */
 {
 #if !HAVE_STDARG_H
@@ -1530,10 +1530,10 @@ rpl_snprintf(va_alist) va_dcl
 #if !HAVE_ASPRINTF
 #if HAVE_STDARG_H
 int
-rpl_asprintf(char **ret, const char *format, ...)
+asprintf(char **ret, const char *format, ...)
 #else
 int
-rpl_asprintf(va_alist) va_dcl
+asprintf(va_alist) va_dcl
 #endif	/* HAVE_STDARG_H */
 {
 #if !HAVE_STDARG_H
