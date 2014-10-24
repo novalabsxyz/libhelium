@@ -13,6 +13,7 @@ set(VERSION_PATCH "1")
 set(VERSION "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}")
 add_definitions(-DLIBHELIUM_VERSION="${VERSION}")
 add_definitions(-D_GNU_SOURCE) # you need this or libuv will not be happy
+add_definitions(-DHAVE_CONFIG_H)
 
 if((${CMAKE_C_COMPILER_ID} STREQUAL "Clang") OR (${CMAKE_C_COMPILER_ID} STREQUAL "GNU")) 
   set(CMAKE_C_FLAGS "-Wall -pedantic -Werror -std=c90 -funsigned-char -Wno-long-long")
@@ -46,10 +47,31 @@ if(BLOCKS AND BLOCKS_FOUND)
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fblocks")
 endif(BLOCKS AND BLOCKS_FOUND)
 
+CHECK_FUNCTION_EXISTS(vsnprintf HAVE_VSNPRINTF)
+CHECK_FUNCTION_EXISTS(snprintf HAVE_SNPRINTF)
+CHECK_FUNCTION_EXISTS(vasprintf HAVE_VASPRINTF)
+CHECK_FUNCTION_EXISTS(asprintf HAVE_ASPRINTF)
+CHECK_INCLUDE_FILES("stdarg.h" HAVE_STDARG_H)
+CHECK_INCLUDE_FILES("stddef.h" HAVE_STDDEF_H)
+CHECK_INCLUDE_FILES("stdint.h" HAVE_STDINT_H)
+CHECK_INCLUDE_FILES("stdlib.h" HAVE_STDLIB_H)
+CHECK_INCLUDE_FILES("inttypes.h" HAVE_INTTYPES_H)
+CHECK_INCLUDE_FILES("locale.h" HAVE_LOCALE_H)
+CHECK_FUNCTION_EXISTS(localeconv HAVE_LOCALECONV)
+CHECK_FUNCTION_EXISTS(lconv_decimal_point HAVE_LCONV_DECIMAL_POINT)
+CHECK_FUNCTION_EXISTS(lconv_thousands_sep HAVE_LCONV_THOUSANDS_SEP)
+
+configure_file ("include/config.h.in"
+  "include/config.h" )
+
+MESSAGE("HAVE_VSNPRINTF is ${HAVE_VSNPRINTF}")
+
+
 set(HELIUM_SOURCE_FILES
   src/logging.c
   src/hashmap.c
   src/helium.c
+  src/snprintf.c
   include/helium.h
   include/helium_logging.h
   include/helium_internal.h)
@@ -83,7 +105,7 @@ if(WIN32)
 	generate_export_header(helium)
 else()
 	add_library(heliumStatic STATIC ${HELIUM_SOURCE_FILES})
-	set_target_property(heliumStatic, PROPERTIES OUTPUT_NAME helium)
+	set_target_properties(heliumStatic PROPERTIES OUTPUT_NAME helium)
 	target_include_directories(heliumStatic PUBLIC ${HELIUM_INCLUDES})
 	target_link_libraries(heliumStatic PUBLIC ${HELIUM_LIBS})
 endif()
