@@ -14,11 +14,15 @@ set(VERSION "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}")
 add_definitions(-DLIBHELIUM_VERSION="${VERSION}")
 add_definitions(-D_GNU_SOURCE) # you need this or libuv will not be happy
 
-set(CMAKE_C_FLAGS "-Wall -pedantic -Werror -std=c90 -funsigned-char")
+set(CMAKE_C_FLAGS "-Wall -pedantic -Werror -std=c90 -funsigned-char -Wno-long-long")
 
 find_package(uv)
-find_package(crypto)
 find_package(openssl)
+
+message(STATUS "OPENSSL LIBRARIES = ${OPENSSL_LIBRARIES}")
+
+find_package(crypto)
+
 
 if(BLOCKS AND NOT APPLE)
   find_package(blocksruntime)
