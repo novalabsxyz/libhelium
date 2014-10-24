@@ -1,5 +1,9 @@
 #include <stdio.h>
+#ifdef _MSC_VER
+#include "msvc_inttypes.h"
+#else
 #include <inttypes.h>
+#endif
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>

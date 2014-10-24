@@ -1,6 +1,10 @@
 #include <stdio.h>
 #include <string.h>
+#ifdef _MSC_VER
+#include "msvc_inttypes.h"
+#else
 #include <inttypes.h>
+#endif
 
 #include <openssl/evp.h>
 #include <openssl/bio.h>
