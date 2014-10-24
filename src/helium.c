@@ -16,6 +16,7 @@
 
 #include "helium_internal.h"
 #include "helium_logging.h"
+#include "helium_byteorder.h"
 
 const char *libhelium_version()
 {
@@ -105,7 +106,9 @@ int _getdeviceaddr(uint64_t macaddr, char *proxy, struct addrinfo **address) {
   int err;
   struct addrinfo hints = {AF_UNSPEC, SOCK_DGRAM, 0, 0};
   if (proxy == NULL) {
-    asprintf(&target, "%" PRIX64 ".d.helium.io", macaddr);
+    /* TODO make the DNS suffix configurable */
+    target = malloc(16+12+1); /* 16 for the mac address, 12 for .d.helium.io and 1 for NUL */
+    snprintf(target, 16+12+1, "%" PRIX64 ".d.helium.io", macaddr);
     helium_dbg("looking up %s", target);
     if (target == NULL) {
       return -1;
@@ -218,8 +221,7 @@ void _udp_recv_callback(uv_udp_t *handle, ssize_t nread, const uv_buf_t *buf, co
     /* extract from ipv6 peer address */
     struct sockaddr_in6 *in6addr = (struct sockaddr_in6*)addr;
     memcpy((void*)&macaddr, in6addr->sin6_addr.s6_addr+8, 8);
-    /* XXX this is a giant non-portable hack */
-    macaddr = __builtin_bswap64(macaddr);
+    macaddr = BSWAP_64(macaddr);
   } else {
     /* the first 8 bytes are the MAC, little endian */
     memcpy((void*)&macaddr, buf->base, 8);
