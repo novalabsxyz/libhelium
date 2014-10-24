@@ -161,9 +161,7 @@ void _async_callback(uv_async_t *async)
 
   uv_sem_post(&conn->sem);
 
-  if (result == 0) {
-    free(request);
-  }
+  free(request);
 }
 
 void _buffer_alloc_callback(uv_handle_t *handle, size_t suggested, uv_buf_t *dst)
