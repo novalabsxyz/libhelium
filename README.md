@@ -48,6 +48,14 @@ You'll need cmake, libuv and openssl (please note that the OpenSSL included with
 
 You'll need libuv. Install it from git or with your favorite package manager. You'll need `clang` and [`libblocksruntime`](http://mackyle.github.io/blocksruntime/) if you want to build with C blocks support on.
 
+### Debian and Ubuntu packages
+
+You can install the prerequisite packages (other than cmake and libuv) with:
+
+    apt-get update && apt-get install -y autoconf automake build-essential \
+    clang doxygen git libblocksruntime-dev libcunit1-dev libssl-dev libtool \
+    wget
+
 ### cmake
 
 3.0 or higher is required, if your package manager doesn't have cmake 3, then build from source:
