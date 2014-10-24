@@ -107,7 +107,7 @@ For example (using a ipv4->ipv6 proxy at r01.foo.example.io):
 
     ./shell -p r01.foo.example.io
     ...
-    00212effffffffff 34dcxtSTIsyGFZ6Tffffff== s
+    00212effffffffff 34dcxtSTIsyLFZ6Tffffff== s
 
 will subscribe you to messages from device 00212effffffffff that is being proxied through r01.
 
