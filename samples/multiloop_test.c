@@ -1,3 +1,10 @@
+/*
+ * Copyright (C) 2014 Helium Systems Inc.
+ *
+ * This software may be modified and distributed under the terms
+ * of the MIT license.  See the LICENSE file for details.
+ */
+
 #include <stdio.h>
 #include <string.h>
 #include <inttypes.h>
@@ -29,10 +36,10 @@ int main(int argc, char *argv[])
   char message[1024];
 
   helium_logging_start();
-  
+
   conn2 = helium_alloc();
   helium_open(conn2, proxy, test_callback2);
-  
+
   conn = helium_alloc();
   helium_open(conn, proxy, test_callback);
 
