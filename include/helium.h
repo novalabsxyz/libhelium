@@ -1,12 +1,15 @@
+/*
+ * Copyright (C) 2014 Helium Systems Inc.
+ *
+ * This software may be modified and distributed under the terms
+ * of the MIT license.  See the LICENSE file for details.
+ */
+
 /**
    @file helium.h
    @authors the Helium team
    @copyright Helium Systems, 2014
 */
-
-/** @file
- *  @author The Helium team
- */
 
 #define WIN32_LEAN_AND_MEAN
 #include <stdio.h>
@@ -32,7 +35,7 @@ void helium_logging_start(); /* debug */
 */
 typedef unsigned char helium_token_t[16];
 
-/** 
+/**
   @brief An opaque type encapsulating a UDP connection over the Helium network. */
 typedef struct helium_connection_s helium_connection_t;
 
@@ -54,8 +57,8 @@ typedef void (^helium_block_t)(const helium_connection_t *conn, uint64_t sender_
 
 
 /**
-   @brief Allocates a new libhelium connection. 
-    
+   @brief Allocates a new libhelium connection.
+
    The result of this function must be passed to `helium_free`.
 */
 helium_connection_t *helium_alloc(void);

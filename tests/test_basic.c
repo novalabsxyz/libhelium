@@ -1,3 +1,10 @@
+/*
+ * Copyright (C) 2014 Helium Systems Inc.
+ *
+ * This software may be modified and distributed under the terms
+ * of the MIT license.  See the LICENSE file for details.
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -30,12 +37,12 @@ int main(int argc, char *argv[])
   ALL_CASES[1].message = "alloc then free should have no footprint";
   ALL_CASES[1].test = test_alloc_then_free;
 
-  
+
   if (CUE_SUCCESS != CU_initialize_registry()) {
     return CU_get_error();
   }
- 
-   /* add a suite to the registry */ 
+
+   /* add a suite to the registry */
   pSuite = CU_add_suite("Suite_1", NULL, NULL);
   if (pSuite == NULL) {
     CU_cleanup_registry();
@@ -49,18 +56,17 @@ int main(int argc, char *argv[])
       return CU_get_error();
     }
   }
-  
-   /* add the tests to the suite */ 
 
-  
-  /* Run all tests using the CUnit Basic interface */ 
+   /* add the tests to the suite */
+
+
+  /* Run all tests using the CUnit Basic interface */
   CU_basic_set_mode(CU_BRM_VERBOSE);
   CU_basic_run_tests();
 
   failures = CU_get_number_of_failures();
-  
+
   CU_cleanup_registry();
-  
+
   return (int)failures;
 }
-
