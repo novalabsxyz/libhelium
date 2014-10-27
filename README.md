@@ -88,7 +88,7 @@ Building
 ========
 
 
-    git clone git@github.com:nervcorp/libhelium ; cd libhelium
+    git clone git@github.com:helium/libhelium ; cd libhelium
     mkdir build ; cd build
     cmake ..
     make
