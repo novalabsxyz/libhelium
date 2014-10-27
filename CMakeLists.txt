@@ -21,17 +21,18 @@ find_package(openssl)
 find_package(crypto)
 find_package(cunit)
 
+find_library(MATH_LIB m)
+
 if(BLOCKS AND NOT APPLE)
   find_package(blocksruntime)
 endif(BLOCKS AND NOT APPLE)
-
 
 set(HELIUM_INCLUDES
   include
   ${CMAKE_CURRENT_BINARY_DIR}/include/
 )
 
-set(HELIUM_LIBS ${OPENSSL_LIBRARIES} ${HELIUM_LIBS} ${UV_LIBRARIES} ${CRYPTO_LIBRARIES} )
+set(HELIUM_LIBS ${OPENSSL_LIBRARIES} ${MATH_LIB} ${HELIUM_LIBS} ${UV_LIBRARIES} ${CRYPTO_LIBRARIES})
 set(HELIUM_INCLUDES ${OPENSSL_INCLUDE_DIR} ${HELIUM_INCLUDES} ${UV_INCLUDE_DIR} ${CRYPTO_INCLUDE_DIR} )
 
 if(BLOCKS AND BLOCKS_FOUND)
@@ -94,14 +95,9 @@ endif()
 message("HELIUM_INCLUDES are ${HELIUM_INCLUDES}")
 message("HELIUM_LIBS ARE ${HELIUM_LIBS}")
 
-add_library(helium SHARED ${HELIUM_SOURCE_FILES})
+add_library(helium ${HELIUM_SOURCE_FILES})
 if(WIN32)
 	generate_export_header(helium)
-else()
-	add_library(heliumStatic STATIC ${HELIUM_SOURCE_FILES})
-	set_target_properties(heliumStatic PROPERTIES OUTPUT_NAME helium)
-	target_include_directories(heliumStatic PUBLIC ${HELIUM_INCLUDES})
-	target_link_libraries(heliumStatic PUBLIC ${HELIUM_LIBS})
 endif()
 target_include_directories(helium PUBLIC ${HELIUM_INCLUDES})
 target_link_libraries(helium PUBLIC ${HELIUM_LIBS})
@@ -120,15 +116,16 @@ set(SAMPLE_INCLUDES
   ${CRYPTO_INCLUDE_DIR})
 
 set(SAMPLE_LIBRARIES
+  ${MATH_LIB}
   ${OPENSSL_LIBRARIES}
   ${UV_LIBRARIES}
   ${CRYPTO_LIBRARIES})
 
 IF(UNIX)
-  set(SAMPLE_LIBRARIES ${SAMPLE_LIBRARIES} m ${CMAKE_CURRENT_BINARY_DIR}/libhelium.a)
+  set(SAMPLE_LIBRARIES ${SAMPLE_LIBRARIES} $<TARGET_LINKER_FILE:helium>)
 ENDIF(UNIX)
 if(WIN32)
-	set(SAMPLE_LIBRARIES ${SAMPLE_LIBRARIES} Debug/helium)
+  set(SAMPLE_LIBRARIES ${SAMPLE_LIBRARIES} Debug/helium)
 endif()
 
 set(TEST_LIBRARIES
