@@ -1,7 +1,7 @@
-Libhelium
+libhelium
 =========
 
-low-level, cross-platform interface to Helium routers and bridges
+An efficient, cross-platform interface to the Helium platform.
 
 Example
 =======
