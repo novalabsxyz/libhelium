@@ -79,7 +79,8 @@ endif
 
 package: ostype install
 	fpm $(BUILDCMD)
-install:
+
+install: stage
 	cd .. && make install
 stage:
 	cmake -DCMAKE_INSTALL_PREFIX:PATH=./stage ..
