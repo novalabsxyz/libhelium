@@ -7,8 +7,8 @@ PKG_BUILD    ?= 1
 # Flags that are shared on all platforms, this MUST go last
 SHAREDFLAGS   = -s dir -m 'packaging@helium.co' -a native -n libhelium \
 		-v $(PKG_REVISION) -C ./stage --iteration $(PKG_BUILD) \
-		--license MIT --vendor Helium \
-		-x .git \
+		--license MIT --vendor Helium --url http://helium.co \
+		-x .git -p packages \
 		include lib
 
 ifeq ($(OS),Linux)
@@ -76,11 +76,12 @@ endif
 endif
 
 
-
 .PHONY: ostype varcheck package
 
 package: ostype install
+	mkdir -p packages
 	fpm $(BUILDCMD)
+	@echo "Your package can be found in the ./packages directory"
 
 install: stage
 	cd .. && make install
