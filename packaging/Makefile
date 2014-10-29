@@ -1,5 +1,15 @@
 OS            = $(shell uname -s)
-SHAREDFLAGS   = -m <packaging@helium.co> -a native -n libhelium
+PKG_REVISION  ?= $(shell git describe --tags)
+
+# Default the package build version to 1 if not already set
+PKG_BUILD    ?= 1
+
+# Flags that are shared on all platforms, this MUST go last
+SHAREDFLAGS   = -s dir -m 'packaging@helium.co' -a native -n libhelium \
+		-v $(PKG_REVISION) -C ./stage --iteration $(PKG_BUILD) \
+		--license MIT --vendor Helium \
+		-x .git \
+		include lib
 
 ifeq ($(OS),Linux)
 ARCH          = $(shell uname -m)
@@ -31,7 +41,8 @@ ARCH          = $(shell file `which cc` | grep -c x86_64 2> /dev/null | awk \
                        '{if ($$1 == "0") {print "i386"} else {print "x86_64"}}')
 PKGTYPE       = tar
 OUTTYPE       = -t $(PKGTYPE)
-BUILDCMD      = $(SHAREDFLAGS) $(OUTTYPE)
+PKGOPTIONS    = --prefix=/usr/local
+BUILDCMD      =  $(OUTTYPE) $(PKGOPTIONS) $(SHAREDFLAGS)
 endif
 
 ifeq ($(OS),FreeBSD)
@@ -62,14 +73,17 @@ endif
 
 endif
 
-# Default the package build version to 1 if not already set
-PKG_BUILD    ?= 1
+
 
 .PHONY: ostype varcheck package
 
-package: ostype
+package: ostype install
+	fpm $(BUILDCMD)
+install:
+	cd .. && make install
+stage:
+	cmake -DCMAKE_INSTALL_PREFIX:PATH=./stage ..
 
-## Call platform dependent makefile
 ostype: varcheck supported
 	@echo "Operating system: '$(OSNAME)', '$(OS)', '$(ARCH)'"
 	@echo "Build type: '$(PKGTYPE)'"
