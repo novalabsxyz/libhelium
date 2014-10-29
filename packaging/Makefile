@@ -83,7 +83,7 @@ package: ostype install
 install: stage
 	cd .. && make install
 stage:
-	cmake -DCMAKE_INSTALL_PREFIX:PATH=./stage ..
+	cd .. && cmake -DCMAKE_INSTALL_PREFIX:PATH=./packaging/stage .
 
 ostype: varcheck supported
 	@echo "Operating system: '$(OSNAME)', '$(OS)', '$(ARCH)'"
