@@ -112,7 +112,7 @@ int _getdeviceaddr(uint64_t macaddr, char *proxy, struct addrinfo **address) {
   if (proxy == NULL) {
     /* TODO make the DNS suffix configurable */
     asprintf(&target, "%" PRIX64 ".d.helium.io", macaddr);
-    helium_dbg("looking up %s", target);
+    helium_dbg("looking up %s\n", target);
     if (target == NULL) {
       return -1;
     }
@@ -140,7 +140,7 @@ void _async_callback(uv_async_t *async)
   uint64_t macaddr;
   int result;
 
-  helium_dbg("In async callback");
+  helium_dbg("In async callback\n");
   request = (struct helium_request_s *)async->data;
   assert(request != NULL);
 
@@ -160,7 +160,7 @@ void _async_callback(uv_async_t *async)
     result = _handle_quit(conn);
     break;
   case UNSUBSCRIBE_REQUEST:
-    helium_dbg("unsubscribing");
+    helium_dbg("unsubscribing\n");
     result = _handle_unsubscribe_request(conn, macaddr);
     break;
   }
@@ -168,7 +168,7 @@ void _async_callback(uv_async_t *async)
   uv_sem_post(&conn->sem);
 
   if (result != 0) {
-    helium_dbg("Request %p, of type %d, failed with error code %d", (void *)request, (int)request->request_type, result);
+    helium_dbg("Request %p, of type %d, failed with error code %d\n", (void *)request, (int)request->request_type, result);
   }
 
   free(request);
@@ -177,7 +177,7 @@ void _async_callback(uv_async_t *async)
 void _buffer_alloc_callback(uv_handle_t *handle, size_t suggested, uv_buf_t *dst)
 {
   char *chunk = malloc(suggested);
-  helium_dbg("in allocate, allocating %zd bytes into pointer %p", suggested, chunk);
+  helium_dbg("in allocate, allocating %zd bytes into pointer %p\n", suggested, chunk);
   assert(chunk != NULL);
   memset(chunk, 0, suggested);
   *dst = uv_buf_init(chunk, suggested);
@@ -214,7 +214,7 @@ void _udp_recv_callback(uv_udp_t *handle, ssize_t nread, const uv_buf_t *buf, co
     return;
   }
 
-  helium_dbg("in recv callback, buf chunk is %p", buf->base);
+  helium_dbg("in recv callback, buf chunk is %p\n", buf->base);
   macaddr = 0;
   assert(handle->data != NULL);
   conn = (helium_connection_t *)handle->data;
@@ -238,7 +238,7 @@ void _udp_recv_callback(uv_udp_t *handle, ssize_t nread, const uv_buf_t *buf, co
   if (!token) {
     hashmap_get(&conn->subscription_map, &macaddr, sizeof(uint64_t), (void**)&token, &len);
     if (!token) {
-      helium_dbg("couldn't find entry in mac->token map for mac addr %" PRIx64, macaddr);
+      helium_dbg("couldn't find entry in mac->token map for mac addr %\n" PRIx64, macaddr);
       return;
     }
   }
@@ -390,7 +390,7 @@ int _handle_subscribe_request(helium_connection_t *conn,
     helium_dbg("subscribed to %" PRIu64 "\n", macaddr);
     freeaddrinfo(address);
   } else {
-    helium_dbg("Couldn't get device addr");
+    helium_dbg("Couldn't get device addr\n");
     free(packet);
   }
 
@@ -412,7 +412,7 @@ int _handle_unsubscribe_request(helium_connection_t *conn,
 
   hashmap_get(&conn->subscription_map, &macaddr, sizeof(uint64_t), (void**)&token, &len);
   if (!token) {
-    helium_dbg("unable to find %" PRIu64 " in subscription map", macaddr);
+    helium_dbg("unable to find %" PRIu64 " in subscription map\n", macaddr);
     return -1;
   }
 
@@ -444,7 +444,7 @@ int _handle_unsubscribe_request(helium_connection_t *conn,
     helium_dbg("unsubscribed from %" PRIu64 "\n", macaddr);
     freeaddrinfo(address);
   } else {
-    helium_dbg("Couldn't get device addr");
+    helium_dbg("Couldn't get device addr\n");
     free(packet);
   }
 
@@ -520,7 +520,7 @@ void helium_free(helium_connection_t *conn)
   hashmap_pair *pair = NULL;
   int closed;
 
-  helium_dbg("freeing connection");
+  helium_dbg("freeing connection\n");
 
   if (conn == NULL) {
     return;
@@ -580,11 +580,11 @@ int helium_open(helium_connection_t *conn, const char *proxy_addr, helium_callba
   }
 
   if (proxy_addr != NULL) {
-    helium_dbg("binding ipv4");
+    helium_dbg("binding ipv4\n");
     err = uv_ip4_addr("0.0.0.0", 0, &v4addr);
   }
   else {
-    helium_dbg("binding ipv6");
+    helium_dbg("binding ipv6\n");
     err = uv_ip6_addr("::", 0, &v6addr);
   }
 
@@ -702,7 +702,7 @@ int helium_close(helium_connection_t *conn)
 {
   struct helium_request_s *request = calloc(1, sizeof(struct helium_request_s));
 
-  helium_dbg("closing connection");
+  helium_dbg("closing connection\n");
   request->conn = conn;
   request->request_type = QUIT_REQUEST;
 
