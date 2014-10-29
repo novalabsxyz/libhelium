@@ -1,4 +1,5 @@
 OS            = $(shell uname -s)
+SHAREDFLAGS   = -m <packaging@helium.co> -a native -n libhelium
 
 ifeq ($(OS),Linux)
 ARCH          = $(shell uname -m)
@@ -7,15 +8,18 @@ ISDEB         = $(shell cat /etc/debian_version 2> /dev/null)
 ISSLES        = $(shell cat /etc/SuSE-release 2> /dev/null)
 ifneq ($(ISRPM),)
 OSNAME        = RedHat
-PKGERDIR      = rpm
+PKGTYPE       = rpm
+OUTTYPE       = -t $(PKGTYPE)
 else
 ifneq ($(ISDEB),)
 OSNAME        = Debian
-PKGERDIR      = deb
+PKGTYPE       = deb
+OUTTYPE       = -t $(PKGTYPE)
 else
 ifneq ($(ISSLES),)
 OSNAME        = SLES
-PKGERDIR      = rpm
+PKGTYPE       = rpm
+OUTTYPE       = -t $(PKGTYPE)
 endif  # SLES
 endif  # deb
 endif  # rpm
@@ -25,7 +29,9 @@ ifeq ($(OS),Darwin)          # OSX
 OSNAME        = OSX
 ARCH          = $(shell file `which cc` | grep -c x86_64 2> /dev/null | awk \
                        '{if ($$1 == "0") {print "i386"} else {print "x86_64"}}')
-PKGERDIR      = osx
+PKGTYPE       = tar
+OUTTYPE       = -t $(PKGTYPE)
+BUILDCMD      = $(SHAREDFLAGS) $(OUTTYPE)
 endif
 
 ifeq ($(OS),FreeBSD)
@@ -33,9 +39,9 @@ OSNAME        = FreeBSD
 ARCH          = $(shell uname -m)
 PKGNG         = $(shell uname -r | awk -F. '{ print ($$1 > 9) ? "true" : "false" }')
 ifeq ($(PKGNG),true)        # FreeBSD 10.0 or greater
-PKGERDIR      = fbsdng
+PKGTYPE       = fbsdng
 else                        # Older FreeBSD pkg_add
-PKGERDIR      = fbsd
+PKGTYPE       = fbsd
 endif
 endif
 
@@ -46,12 +52,12 @@ ARCH          = $(shell file `which erlc` | grep -c 64-bit 2> /dev/null | awk \
 
 ifneq ($(KERNELVER),0)       # SmartOS
 OSNAME        = SmartOS
-PKGERDIR      = smartos
+PKGTYP E      = smartos
 else                         # Solaris / OmniOS
 DISTRO        = $(shell head -1 /etc/release|awk \
                    '{if ($$1 == "OmniOS") {print $$1} else {print "Solaris"}}')
 OSNAME        = ${DISTRO}
-PKGERDIR      = solaris
+PKGTYPE       = solaris
 endif
 
 endif
@@ -66,7 +72,7 @@ package: ostype
 ## Call platform dependent makefile
 ostype: varcheck supported
 	@echo "Operating system: '$(OSNAME)', '$(OS)', '$(ARCH)'"
-	@echo "Build type: '$(PKGERDIR)'"
+	@echo "Build type: '$(PKGTYPE)'"
 	@echo "Build command: '$(BUILDCMD)'"
 
 supported:
