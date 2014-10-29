@@ -76,7 +76,7 @@ endif
 endif
 
 
-.PHONY: ostype varcheck package
+.PHONY: ostype varcheck package pkgclean
 
 package: ostype install
 	mkdir -p packages
@@ -100,3 +100,6 @@ supported:
 ## Check required settings before continuing
 varcheck:
 	$(if $(shell which fpm),,$(error "FPM is needed to build packages, see https://github.com/jordansissel/fpm"))
+
+pkgclean:
+	rm -rf stage packages
