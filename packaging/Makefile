@@ -25,7 +25,7 @@ ifneq ($(ISDEB),)
 OSNAME        = Debian
 PKGTYPE       = deb
 OUTTYPE       = -t $(PKGTYPE)
-PKGOPTIONS    = --prefix=/usr/local
+PKGOPTIONS    = --prefix=/usr
 BUILDCMD      =  $(OUTTYPE) $(PKGOPTIONS) $(SHAREDFLAGS)
 else
 ifneq ($(ISSLES),)
