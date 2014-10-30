@@ -116,7 +116,9 @@ target_link_libraries(helium PUBLIC ${HELIUM_LIBS})
 target_compile_options(helium PUBLIC "-fPIC")
 
 install(TARGETS helium DESTINATION lib)
-install(TARGETS heliumStatic DESTINATION lib)
+if(NOT WIN32)
+  install(TARGETS heliumStatic DESTINATION lib)
+endif()
 install(FILES ${HELIUM_HEADER_FILES} DESTINATION include)
 
 set(SAMPLE_INCLUDES
