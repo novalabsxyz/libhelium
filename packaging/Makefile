@@ -46,12 +46,6 @@ PKGTYPE       = osxpkg
 OUTTYPE       = -t $(PKGTYPE)
 PKGOPTIONS    = --prefix=/usr/local
 BUILDCMD      = $(OUTTYPE) $(PKGOPTIONS) $(SHAREDFLAGS)
-
-# Prevent building a tarball as non-root so perms aren't messed up
-OSXUSERID     = $(shell id -u)
-ifneq ($(OSXUSERID),0)
-OSXNONROOT    = true
-endif
 endif
 
 ifeq ($(OS),FreeBSD)
@@ -103,7 +97,6 @@ ostype: varcheck supported
 # Put checks in this target to ensure supported builds
 supported:
 	$(if $(BUILDCMD),,$(error "Operating system '$(OSNAME)' not supported by libhelium"))
-	$(if $(OSXNONROOT),$(error "You must be root or use sudo to build on OSX"),)
 
 ## Check required settings before continuing
 varcheck:
