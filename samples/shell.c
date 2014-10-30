@@ -29,7 +29,8 @@ int main(int argc, char *argv[])
   helium_token_t token;
   unsigned char token_in[32];
   char message[1024];
-  int ret;
+  int ret = 0;
+  int err = 0;
 
   helium_logging_start();
   conn = helium_alloc();
@@ -50,17 +51,18 @@ int main(int argc, char *argv[])
 #endif
 
   while(1) {
-    ret = scanf("%" PRIx64 " %s %[^\n]", &mac, token_in, message);
-    if (ret > 0) {
+    ret = scanf("%"PRIx64"%*[ ]%[a-zA-Z0-9+/=]%*[ ]%[^\n]", &mac, token_in, message);
+    if (ret == 3) {
+      fflush(stdin); /* flush the newline and anything after it */
       helium_base64_token_decode(token_in, strlen((char*)token_in), token);
       if (strncmp("s", message, 1) == 0) {
-        int  err = helium_subscribe(conn, mac, token);
+        err = helium_subscribe(conn, mac, token);
         helium_dbg("subscribe result %d\n", err);
       } else if (strncmp("u", message, 1) == 0) {
-        int  err = helium_unsubscribe(conn, mac);
+        err = helium_unsubscribe(conn, mac);
         helium_dbg("unsubscribe result %d\n", err);
       } else {
-        int  err = helium_send(conn, mac, token, (unsigned char*)message, strlen(message));
+        err = helium_send(conn, mac, token, (unsigned char*)message, strlen(message));
         helium_dbg("send result %d\n", err);
       }
     } else {

@@ -511,7 +511,6 @@ helium_connection_t *helium_alloc(void)
   uv_mutex_init(&conn->mutex);
 
   uv_loop_init(conn->loop);
-  uv_thread_create(conn->thread, _run_uv_loop, conn);
 
   return conn;
 }
@@ -611,7 +610,11 @@ int helium_open(helium_connection_t *conn, const char *proxy_addr, helium_callba
     return err;
   }
 
-  return 0;
+  /* XXX we have to create the thread here instead of helium_alloc because there
+   * are no handlers on the loop in alloc() and so the thread can exit instantly */
+  err = uv_thread_create(conn->thread, _run_uv_loop, conn);
+
+  return err;
 }
 
 int helium_subscribe(helium_connection_t *conn, uint64_t macaddr, helium_token_t token)
