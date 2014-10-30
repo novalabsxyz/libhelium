@@ -38,7 +38,7 @@ libhelium depends on [libuv](https://github.com/joyent/libuv) (>= 0.11.29) for c
 
 ## OS X
 
-You'll need cmake, libuv and openssl (please note that the OpenSSL included with Darwin will *not* work). Assuming you have [Homebrew](http://brew.sh) installed:
+You can download a prepackaged OS X installer [here](https://github.com/helium/libhelium/releases/tag/0.1.0). Should you wish to compile from source, you'll need cmake, libuv and openssl (please note that the OpenSSL included with Darwin will *not* work). Assuming you have [Homebrew](http://brew.sh) installed:
 
     brew install cmake
     brew install openssl
