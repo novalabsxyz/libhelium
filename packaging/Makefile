@@ -45,7 +45,13 @@ ARCH          = $(shell file `which cc` | grep -c x86_64 2> /dev/null | awk \
 PKGTYPE       = tar
 OUTTYPE       = -t $(PKGTYPE)
 PKGOPTIONS    = --prefix=/usr/local
-BUILDCMD      =  $(OUTTYPE) $(PKGOPTIONS) $(SHAREDFLAGS)
+BUILDCMD      = $(OUTTYPE) $(PKGOPTIONS) $(SHAREDFLAGS)
+
+# Prevent building a tarball as non-root so perms aren't messed up
+OSXUSERID     = $(shell id -u)
+ifneq ($(OSXUSERID),0)
+OSXNONROOT    = true
+endif
 endif
 
 ifeq ($(OS),FreeBSD)
@@ -94,9 +100,10 @@ ostype: varcheck supported
 	@echo "Build type: '$(PKGTYPE)'"
 	@echo "Build command: '$(BUILDCMD)'"
 
+# Put checks in this target to ensure supported builds
 supported:
 	$(if $(BUILDCMD),,$(error "Operating system '$(OSNAME)' not supported by libhelium"))
-
+	$(if $(OSXNONROOT),$(error "You must be root or use sudo to build on OSX"),)
 
 ## Check required settings before continuing
 varcheck:
