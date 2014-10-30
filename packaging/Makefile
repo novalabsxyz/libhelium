@@ -42,7 +42,7 @@ ifeq ($(OS),Darwin)          # OSX
 OSNAME        = OSX
 ARCH          = $(shell file `which cc` | grep -c x86_64 2> /dev/null | awk \
                        '{if ($$1 == "0") {print "i386"} else {print "x86_64"}}')
-PKGTYPE       = tar
+PKGTYPE       = osxpkg
 OUTTYPE       = -t $(PKGTYPE)
 PKGOPTIONS    = --prefix=/usr/local
 BUILDCMD      = $(OUTTYPE) $(PKGOPTIONS) $(SHAREDFLAGS)
