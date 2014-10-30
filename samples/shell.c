@@ -14,7 +14,7 @@
 
 void test_callback(const helium_connection_t *conn, uint64_t sender_mac, char * const message, size_t count)
 {
-  helium_dbg("Function-pointer callback got %s %zd\n", message, count);
+  helium_dbg("Function-pointer callback got %s %lu\n", message, (unsigned long)count);
   helium_dbg("Mac address is %" PRIu64 "\n", sender_mac);
 }
 
@@ -40,7 +40,7 @@ int main(int argc, char *argv[])
 
 #if HAVE_BLOCKS
   helium_open_b(conn, proxy, ^(const helium_connection_t *conn, uint64_t mac, char *msg, size_t n) {
-      helium_dbg("Block callback got %zu bytes from message %s\n", n, msg);
+      helium_dbg("Block callback got %lu bytes from message %s\n", (unsigned long)n, msg);
   });
 #else
   helium_open(conn, proxy, test_callback);

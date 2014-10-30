@@ -177,7 +177,7 @@ void _async_callback(uv_async_t *async)
 void _buffer_alloc_callback(uv_handle_t *handle, size_t suggested, uv_buf_t *dst)
 {
   char *chunk = malloc(suggested);
-  helium_dbg("in allocate, allocating %zd bytes into pointer %p\n", suggested, chunk);
+  helium_dbg("in allocate, allocating %lu bytes into pointer %p\n", (unsigned long)suggested, chunk);
   assert(chunk != NULL);
   memset(chunk, 0, suggested);
   *dst = uv_buf_init(chunk, suggested);
