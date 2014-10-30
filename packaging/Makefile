@@ -6,6 +6,7 @@ PKG_BUILD    ?= 1
 
 # Flags that are shared on all platforms, this MUST go last
 SHAREDFLAGS   = -s dir -m 'packaging@helium.co' -a native -n libhelium \
+		--description 'Cross-platform interface to the Helium ecosystem' \
 		-v $(PKG_REVISION) -C ./stage --iteration $(PKG_BUILD) \
 		--license MIT --vendor Helium --url http://helium.co \
 		-x .git -p packages \
