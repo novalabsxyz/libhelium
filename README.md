@@ -91,7 +91,7 @@ Building
     git clone git@github.com:helium/libhelium ; cd libhelium
     mkdir build ; cd build
     cmake ..
-    make
+    make && sudo make install
 
 ### Documentation
 
