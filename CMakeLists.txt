@@ -16,6 +16,8 @@ add_definitions(-DLIBHELIUM_VERSION="${VERSION}")
 add_definitions(-D_GNU_SOURCE) # you need this or libuv will not be happy
 add_definitions(-DHAVE_CONFIG_H)
 
+set(Crypto_FIND_REQUIRED 1)
+
 find_package(uv)
 find_package(openssl)
 find_package(crypto)
@@ -95,9 +97,6 @@ if(MSVC)
   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /NODEFAULTLIB:LIBCMTD.lib")
   set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /NODEFAULTLIB:LIBCMTD.lib")
 endif()
-
-message("HELIUM_INCLUDES are ${HELIUM_INCLUDES}")
-message("HELIUM_LIBS ARE ${HELIUM_LIBS}")
 
 add_library(helium SHARED ${HELIUM_SOURCE_FILES})
 if(WIN32)
