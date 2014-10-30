@@ -7,7 +7,11 @@
 
 #include <stdio.h>
 #include <string.h>
+#ifdef _MSC_VER
+#include "msvc_inttypes.h"
+#else
 #include <inttypes.h>
+#endif
 
 #include <openssl/evp.h>
 #include <openssl/bio.h>
@@ -17,7 +21,7 @@
 
 void test_callback(const helium_connection_t *conn, uint64_t sender_mac, char * const message, size_t count)
 {
-  helium_dbg("Function-pointer callback got %s %zd\n", message, count);
+  helium_dbg("Function-pointer callback got %s %lu\n", message, (unsigned long)count);
   helium_dbg("Mac address is %" PRIu64 "\n", sender_mac);
 }
 
@@ -35,7 +39,7 @@ int main(int argc, char *argv[])
   helium_logging_start();
   conn = helium_alloc();
   if (argc == 3 && strcmp("-p", argv[1]) == 0) {
-    printf("proxy %s\n", argv[2]);
+    helium_dbg("proxy %s\n", argv[2]);
     proxy = argv[2];
   } else if (argc > 1) {
     printf("USAGE: %s -p <ipv4 proxy>\n", argv[0]);
@@ -44,7 +48,7 @@ int main(int argc, char *argv[])
 
 #if HAVE_BLOCKS
   helium_open_b(conn, proxy, ^(const helium_connection_t *conn, uint64_t mac, char *msg, size_t n) {
-      helium_dbg("Block callback got %zu bytes from message %s", n, msg);
+      helium_dbg("Block callback got %lu bytes from message %s\n", (unsigned long)n, msg);
   });
 #else
   helium_open(conn, proxy, test_callback);

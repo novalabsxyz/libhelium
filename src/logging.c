@@ -6,33 +6,40 @@
  */
 
 #include <stdlib.h>
-#ifndef _WIN32
+#ifdef _WIN32
+#include <stdio.h>
+//int _helium_logging_enabled = 0;
+#else
 #include <syslog.h>
 #endif
 #include <stdarg.h>
 
+
+#include "helium_logging.h"
+
+#ifndef _WIN32
 void helium_logging_start()
 {
-#ifndef _WIN32
+
   openlog("libhelium", LOG_PERROR | LOG_NDELAY | LOG_PID, LOG_USER);
   atexit(closelog);
-#endif
 }
+#endif
 
+#ifndef _WIN32
 void helium_log(int priority, const char *format, ...)
 {
-#ifndef _WIN32
   va_list args;
   va_start(args, format);
   vsyslog(priority, format, args);
-#endif
 }
+#endif
 
+#ifndef _WIN32
 void helium_dbg(const char *format, ...)
 {
-#ifndef _WIN32
   va_list args;
   va_start(args, format);
   vsyslog(LOG_DEBUG, format, args);
-#endif
 }
+#endif

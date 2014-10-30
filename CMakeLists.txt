@@ -3,6 +3,7 @@ project(libhelium)
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake-scripts)
 
 include(CheckIncludeFiles)
+include(CheckFunctionExists)
 
 # Build with blocks by default. If you don't have clang it'll whine at you.
 option(BLOCKS "BLOCKS" ON)
@@ -13,29 +14,29 @@ set(VERSION_PATCH "0")
 set(VERSION "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}")
 add_definitions(-DLIBHELIUM_VERSION="${VERSION}")
 add_definitions(-D_GNU_SOURCE) # you need this or libuv will not be happy
-
-set(CMAKE_C_FLAGS "-Wall -pedantic -Werror -std=c90 -funsigned-char -Wno-long-long")
+add_definitions(-DHAVE_CONFIG_H)
 
 find_package(uv)
 find_package(openssl)
-
-message(STATUS "OPENSSL LIBRARIES = ${OPENSSL_LIBRARIES}")
-
 find_package(crypto)
+find_package(cunit)
 
+if(WIN32)
+  set(MATH_LIB "")
+else()
+  find_library(MATH_LIB m)
+endif(WIN32)
 
 if(BLOCKS AND NOT APPLE)
   find_package(blocksruntime)
 endif(BLOCKS AND NOT APPLE)
-
-find_package(cunit)
 
 set(HELIUM_INCLUDES
   include
   ${CMAKE_CURRENT_BINARY_DIR}/include/
 )
 
-set(HELIUM_LIBS ${OPENSSL_LIBRARIES} ${HELIUM_LIBS} ${UV_LIBRARIES} ${CRYPTO_LIBRARIES} )
+set(HELIUM_LIBS ${OPENSSL_LIBRARIES} ${MATH_LIB} ${HELIUM_LIBS} ${UV_LIBRARIES} ${CRYPTO_LIBRARIES})
 set(HELIUM_INCLUDES ${OPENSSL_INCLUDE_DIR} ${HELIUM_INCLUDES} ${UV_INCLUDE_DIR} ${CRYPTO_INCLUDE_DIR} )
 
 if(BLOCKS AND BLOCKS_FOUND)
@@ -44,10 +45,35 @@ if(BLOCKS AND BLOCKS_FOUND)
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fblocks")
 endif(BLOCKS AND BLOCKS_FOUND)
 
+CHECK_FUNCTION_EXISTS(vsnprintf HAVE_VSNPRINTF)
+CHECK_FUNCTION_EXISTS(snprintf HAVE_SNPRINTF)
+CHECK_FUNCTION_EXISTS(vasprintf HAVE_VASPRINTF)
+CHECK_FUNCTION_EXISTS(asprintf HAVE_ASPRINTF)
+CHECK_INCLUDE_FILES("stdarg.h" HAVE_STDARG_H)
+CHECK_INCLUDE_FILES("stddef.h" HAVE_STDDEF_H)
+CHECK_INCLUDE_FILES("stdint.h" HAVE_STDINT_H)
+CHECK_INCLUDE_FILES("stdlib.h" HAVE_STDLIB_H)
+CHECK_INCLUDE_FILES("inttypes.h" HAVE_INTTYPES_H)
+CHECK_INCLUDE_FILES("locale.h" HAVE_LOCALE_H)
+CHECK_FUNCTION_EXISTS(localeconv HAVE_LOCALECONV)
+CHECK_FUNCTION_EXISTS(lconv_decimal_point HAVE_LCONV_DECIMAL_POINT)
+CHECK_FUNCTION_EXISTS(lconv_thousands_sep HAVE_LCONV_THOUSANDS_SEP)
+
+if((${CMAKE_C_COMPILER_ID} STREQUAL "Clang") OR (${CMAKE_C_COMPILER_ID} STREQUAL "GNU")) 
+  set(CMAKE_C_FLAGS "-Wall -pedantic -Werror -std=c90 -funsigned-char -Wno-long-long")
+endif((${CMAKE_C_COMPILER_ID} STREQUAL "Clang") OR (${CMAKE_C_COMPILER_ID} STREQUAL "GNU"))
+
+configure_file ("include/config.h.in"
+  "include/config.h" )
+
 set(HELIUM_SOURCE_FILES
   src/logging.c
   src/hashmap.c
-  src/helium.c)
+  src/helium.c
+  src/snprintf.c
+  include/helium.h
+  include/helium_logging.h
+  include/helium_internal.h)
 
 set(HELIUM_HEADER_FILES
   include/helium_logging.h
@@ -60,17 +86,39 @@ else()
   add_definitions(-DHAVE_BLOCKS=0)
 endif(CMAKE_C_COMPILER_ID MATCHES "clang")
 
+if(WIN32) 
+  include(GenerateExportHeader)
+  set(HELIUM_LIBS ${HELIUM_LIBS} ws2_32 psapi iphlpapi)
+endif()
+
+if(MSVC)
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /NODEFAULTLIB:LIBCMTD.lib")
+  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /NODEFAULTLIB:LIBCMTD.lib")
+endif()
+
 message("HELIUM_INCLUDES are ${HELIUM_INCLUDES}")
 message("HELIUM_LIBS ARE ${HELIUM_LIBS}")
 
-add_library(helium STATIC ${HELIUM_SOURCE_FILES})
+add_library(helium SHARED ${HELIUM_SOURCE_FILES})
+if(WIN32)
+  generate_export_header(helium)
+else()
+  add_library(heliumStatic STATIC ${HELIUM_SOURCE_FILES})
+  set_target_properties(heliumStatic PROPERTIES OUTPUT_NAME helium)
+  target_include_directories(heliumStatic PUBLIC ${HELIUM_INCLUDES})
+  target_link_libraries(heliumStatic PUBLIC ${HELIUM_LIBS})
+endif()
 target_include_directories(helium PUBLIC ${HELIUM_INCLUDES})
 target_link_libraries(helium PUBLIC ${HELIUM_LIBS})
+
 
 # fPIC is needed to link a static lib to a shared object
 target_compile_options(helium PUBLIC "-fPIC")
 
 install(TARGETS helium DESTINATION lib)
+if(NOT WIN32)
+  install(TARGETS heliumStatic DESTINATION lib)
+endif()
 install(FILES ${HELIUM_HEADER_FILES} DESTINATION include)
 
 set(SAMPLE_INCLUDES
@@ -80,14 +128,17 @@ set(SAMPLE_INCLUDES
   ${CRYPTO_INCLUDE_DIR})
 
 set(SAMPLE_LIBRARIES
-  ${CMAKE_CURRENT_BINARY_DIR}/libhelium.a
+  ${MATH_LIB}
   ${OPENSSL_LIBRARIES}
   ${UV_LIBRARIES}
   ${CRYPTO_LIBRARIES})
 
 IF(UNIX)
-  set(SAMPLE_LIBRARIES ${SAMPLE_LIBRARIES} m)
+  set(SAMPLE_LIBRARIES $<TARGET_LINKER_FILE:heliumStatic> ${SAMPLE_LIBRARIES})
 ENDIF(UNIX)
+if(WIN32)
+  set(SAMPLE_LIBRARIES ${SAMPLE_LIBRARIES} Debug/helium)
+endif()
 
 set(TEST_LIBRARIES
   ${CUNIT_LIBRARY}
