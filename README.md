@@ -10,7 +10,7 @@ Example
 #include <helium.h>
 
 // create a new connection
-helium_collection_t *conn = helium_alloc();
+helium_connection_t *conn = helium_alloc();
 
 // associate it with a proxy (if you don't have direct ipv6 connectivity) and callback function pointer
 helium_open(conn, NULL, my_callback_function);
