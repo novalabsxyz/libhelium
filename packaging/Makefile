@@ -1,3 +1,6 @@
+# Makefile to determine platform and run fpm with appropriate arguments to make
+# a package
+# FPM - https://github.com/jordansissel/fpm, must be installed
 OS            = $(shell uname -s)
 PKG_REVISION  ?= $(shell git describe --tags)
 
@@ -79,6 +82,7 @@ endif
 
 .PHONY: ostype varcheck package pkgclean
 
+# Create the package from the contents of the staging directory
 package: ostype install
 	mkdir -p packages
 	fpm $(BUILDCMD)
@@ -86,6 +90,8 @@ package: ostype install
 
 install: stage
 	cd .. && make install
+
+# Create a staging directory to install into
 stage:
 	cd .. && cmake -DCMAKE_INSTALL_PREFIX:PATH=./packaging/stage .
 
