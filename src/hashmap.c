@@ -29,7 +29,7 @@
 
 
 #define FNV_32_PRIME ((uint32_t)0x01000193)
-#define FNV1_32_INIT ((uint32_t)2166136261)
+#define FNV1_32_INIT ((uint32_t)2166136261U)
 #define TINY_MASK(x) (((uint32_t)1<<(x))-1)
 #define BUCKETS_SIZE(x) (pow(2,(x)))
 
