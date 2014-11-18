@@ -24,7 +24,7 @@ ifneq ($(ISRPM),)
 OSNAME        = RedHat
 PKGTYPE       = rpm
 OUTTYPE       = -t $(PKGTYPE)
-PKGOPTIONS    = --prefix=/usr -d 'libuv (>= v1.0.0)'
+PKGOPTIONS    = --prefix=/usr -d 'libuv >= v1.0.0'
 BUILDCMD      =  $(OUTTYPE) $(PKGOPTIONS) $(SHAREDFLAGS)
 else
 ifneq ($(ISDEB),)
