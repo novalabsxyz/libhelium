@@ -29,7 +29,7 @@
 
 
 #define FNV_32_PRIME ((uint32_t)0x01000193)
-#define FNV1_32_INIT ((uint32_t)2166136261)
+#define FNV1_32_INIT ((uint32_t)2166136261U)
 #define TINY_MASK(x) (((uint32_t)1<<(x))-1)
 #define BUCKETS_SIZE(x) (pow(2,(x)))
 
@@ -52,7 +52,7 @@ void* iter_prev(iterator *iter) {
 uint32_t fnv_32a_buf(const void *buf, unsigned int len, unsigned int x) {
     unsigned char *bp = (unsigned char *)buf;
     unsigned char *be = bp + len;
-    uint32_t hval = FNV1_32_INIT;
+    uint32_t hval = (uint32_t)FNV1_32_INIT;
     while(bp < be) {
         hval ^= (uint32_t)*bp++;
         hval *= FNV_32_PRIME;
