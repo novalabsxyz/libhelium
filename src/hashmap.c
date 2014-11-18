@@ -52,7 +52,7 @@ void* iter_prev(iterator *iter) {
 uint32_t fnv_32a_buf(const void *buf, unsigned int len, unsigned int x) {
     unsigned char *bp = (unsigned char *)buf;
     unsigned char *be = bp + len;
-    uint32_t hval = (uint32_t)FNV1_32_INIT;
+    uint32_t hval = FNV1_32_INIT;
     while(bp < be) {
         hval ^= (uint32_t)*bp++;
         hval *= FNV_32_PRIME;
