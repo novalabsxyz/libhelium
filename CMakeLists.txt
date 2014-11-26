@@ -166,6 +166,13 @@ if(CUNIT_FOUND)
   target_include_directories(test_base64 PUBLIC ${SAMPLE_INCLUDES})
   target_link_libraries(test_base64 PUBLIC ${TEST_LIBRARIES})
   add_test(test_base64 test_base64)
+
+  add_executable(modem_test tests/modem_test.c)
+  add_dependencies(modem_test helium)
+  target_include_directories(modem_test PUBLIC ${SAMPLE_INCLUDES})
+  target_link_libraries(modem_test PUBLIC ${TEST_LIBRARIES})
+  add_test(modem_test modem_test)
+
 endif(CUNIT_FOUND)
 
 find_package(Doxygen)
