@@ -42,7 +42,7 @@ void test_subscribe_get_message() {
   printf("Opening connection\n");
   helium_open(conn, NULL, handle_helium_message);
 
-  b64token = (unsigned char*)"TAf5ITZfEx4N8Pdd/Heg2A==";
+  b64token = (unsigned char*)"PbOkU4Jo+NObbPe27MJGNQ==";
   helium_base64_token_decode(b64token, strlen((char*)b64token), token);
   
   saw_message = 0;
@@ -65,7 +65,7 @@ void test_subscribe_get_message_ipv4() {
   printf("Opening connection\n");
   helium_open(conn, "r01.sjc.helium.io", handle_helium_message);
 
-  b64token = (unsigned char*)"TAf5ITZfEx4N8Pdd/Heg2A==";
+  b64token = (unsigned char*)"PbOkU4Jo+NObbPe27MJGNQ==";
   helium_base64_token_decode(b64token, strlen((char*)b64token), token);
   
   saw_message = 0;
@@ -90,7 +90,7 @@ void test_send_and_get_message() {
   printf("Opening connection\n");
   helium_open(conn, NULL, handle_helium_echo_message);
 
-  b64token = (unsigned char*)"kdTl6U1w+sR61NBiQjm8sw==";
+  b64token = (unsigned char*)"gLXfMtbHEzto9AfiRfafww==";
   helium_base64_token_decode(b64token, strlen((char*)b64token), token);
   
   saw_message = 0;
@@ -120,7 +120,7 @@ void test_send_and_get_message_ipv4() {
   printf("Opening connection\n");
   helium_open(conn, "r01.sjc.helium.io", handle_helium_echo_message);
 
-  b64token = (unsigned char*)"kdTl6U1w+sR61NBiQjm8sw==";
+  b64token = (unsigned char*)"gLXfMtbHEzto9AfiRfafww==";
   helium_base64_token_decode(b64token, strlen((char*)b64token), token);
   
   saw_message = 0;
