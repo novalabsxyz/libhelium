@@ -21,8 +21,13 @@
 
 void test_callback(const helium_connection_t *conn, uint64_t sender_mac, char * const message, size_t count)
 {
-  helium_dbg("Function-pointer callback got %s %lu\n", message, (unsigned long)count);
-  helium_dbg("Mac address is %" PRIu64 "\n", sender_mac);
+  int i;
+  /*helium_dbg("Function-pointer callback got %s %lu\n", message, (unsigned long)count);
+  helium_dbg("Mac address is %" PRIu64 "\n", sender_mac); */
+  for (i = 0; i < count; i++) {
+    printf("%d ", (unsigned char)message[i]);
+  }
+  printf("\n");
 }
 
 int main(int argc, char *argv[])
