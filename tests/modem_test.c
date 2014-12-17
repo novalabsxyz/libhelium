@@ -27,10 +27,11 @@ void handle_helium_message(const helium_connection_t *conn, uint64_t sender_mac,
 }
 
 void handle_helium_echo_message(const helium_connection_t *conn, uint64_t sender_mac, char * const message, size_t count) {
-  if (strncmp(random_string, message, 16) == 0) {
+  /* compare all the bytes, so we can be sure embedded nulls survive */
+  if (memcmp(random_string, message, 16) == 0 && count == sizeof(random_string)) {
     saw_message++;
   }
-  printf("We saw a message %s and saw_message is: %i\n", (char*)message, saw_message);
+  printf("We saw a message %s (len %lu) and saw_message is: %i\n", (char*)message, (unsigned long)count, saw_message);
 }
 
 void test_subscribe_get_message() {
@@ -98,10 +99,11 @@ void test_send_and_get_message() {
   helium_subscribe(conn, 0x000000fffff00001, token);
 
   srand((unsigned) time(&t));
-  snprintf(random_string, sizeof(random_string), "Rand: %i", rand() % 128);
+  /* stick an embedded null in here so we can check libhelium roundtrips those correctly */
+  snprintf(random_string, sizeof(random_string), "Rand: %i%c%i", rand() % 128, 0, rand() % 128);
 
   printf("Sending to device\n");
-  helium_send(conn, 0x000000fffff00001, token, (unsigned char*)random_string, strlen(random_string));
+  helium_send(conn, 0x000000fffff00001, token, (unsigned char*)random_string, sizeof(random_string));
 
   sleep(6);
 
@@ -128,10 +130,11 @@ void test_send_and_get_message_ipv4() {
   helium_subscribe(conn, 0x000000fffff00001, token);
 
   srand((unsigned) time(&t));
-  snprintf(random_string, sizeof(random_string), "Rand: %i", rand() % 128);
+  /* stick an embedded null in here so we can check libhelium roundtrips those correctly */
+  snprintf(random_string, sizeof(random_string), "Rand: %i%c%i", rand() % 128, 0, rand() % 128);
 
   printf("Sending to device\n");
-  helium_send(conn, 0x000000fffff00001, token, (unsigned char*)random_string, strlen(random_string));
+  helium_send(conn, 0x000000fffff00001, token, (unsigned char*)random_string, sizeof(random_string));
 
   sleep(6);
 
