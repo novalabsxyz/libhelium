@@ -37,7 +37,7 @@ const char *libhelium_version()
 
 /* encrypt a message into a packet
    this function mallocs its own output buffer into **dst */
-int libhelium_encrypt_packet(const unsigned char *token, const unsigned char *message, char prefix, unsigned char **dst) {
+int libhelium_encrypt_packet(const unsigned char *token, const unsigned char *message, size_t msg_size, char prefix, unsigned char **dst) {
   EVP_CIPHER_CTX *ctx;
   SHA256_CTX sha256;
   int outlen = 0;
@@ -51,7 +51,7 @@ int libhelium_encrypt_packet(const unsigned char *token, const unsigned char *me
   if ((RAND_bytes(iv, 12)) != 1) {
     return -1;
   }
-  len = 1+ strlen((char*)message) + 12 + 16 + SHA256_DIGEST_LENGTH;
+  len = 1+ msg_size + 12 + 16 + SHA256_DIGEST_LENGTH;
   *dst = malloc(len);
   tmpdst = *dst;
 
@@ -69,7 +69,7 @@ int libhelium_encrypt_packet(const unsigned char *token, const unsigned char *me
   /* no AAD */
   EVP_EncryptUpdate(ctx, tmpdst, &outlen, (unsigned char*)&prefix, 1);
   tmpdst++;
-  EVP_EncryptUpdate(ctx, tmpdst, &outlen, message, strlen((char*)message));
+  EVP_EncryptUpdate(ctx, tmpdst, &outlen, message, msg_size);
   EVP_EncryptFinal_ex(ctx, tmpdst, &tmplen);
   EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_GET_TAG, 16, tmpdst+outlen);
   EVP_CIPHER_CTX_free(ctx);
@@ -317,7 +317,7 @@ void _refresh_subscriptions(uv_timer_t *handle) {
   hashmap_iter_begin(&conn->subscription_map, &it);
   while((pair = iter_next(&it)) != NULL) {
     packet=NULL;
-    count = libhelium_encrypt_packet((unsigned char*)pair->val, (unsigned char*)"", 's', &packet);
+    count = libhelium_encrypt_packet((unsigned char*)pair->val, (unsigned char*)"", 0, 's', &packet);
     if (count < 1) {
       helium_dbg("failed to encrypt re-subscription packet for %" PRIu64 "\n", *(uint64_t*)pair->key);
       continue;
@@ -372,7 +372,7 @@ int _handle_subscribe_request(helium_connection_t *conn,
   /* keep track of the token, so we can decrypt replies */
   hashmap_put(&conn->subscription_map, &macaddr, sizeof(uint64_t), token, sizeof(helium_token_t));
 
-  count = libhelium_encrypt_packet(token, (unsigned char*)"", 's', &packet);
+  count = libhelium_encrypt_packet(token, (unsigned char*)"", 0, 's', &packet);
   if (count < 1) {
     helium_dbg("failed to encrypt subscription packet for %" PRIu64 "\n", macaddr);
     return -1;
@@ -427,7 +427,7 @@ int _handle_unsubscribe_request(helium_connection_t *conn,
   hashmap_del(&conn->subscription_map, &macaddr, sizeof(uint64_t));
   hashmap_del(&conn->token_map, &macaddr, sizeof(uint64_t));
 
-  count = libhelium_encrypt_packet((unsigned char*)token, (unsigned char*)"", 's', &packet);
+  count = libhelium_encrypt_packet((unsigned char*)token, (unsigned char*)"", 0, 's', &packet);
   if (count < 1) {
     helium_dbg("failed to encrypt unsubscription packet for %" PRIu64 "\n", macaddr);
     return -1;
@@ -681,7 +681,7 @@ int helium_send(helium_connection_t *conn, uint64_t macaddr, helium_token_t toke
 {
   unsigned char *packet = NULL;
   struct helium_request_s *req;
-  count = libhelium_encrypt_packet(token, message, 'd', &packet);
+  count = libhelium_encrypt_packet(token, message, count, 'd', &packet);
   if (count < 1) {
     return -1;
   }
