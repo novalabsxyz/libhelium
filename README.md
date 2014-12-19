@@ -33,7 +33,7 @@ helium_unsubscribe(conn, 0x0000112233440001);
 Requirements
 ============
 
-libhelium depends on [libuv](https://github.com/joyent/libuv) (>= 0.11.29) for cross-platform network functionality and OpenSSL (>= 1.0.1) for required cipher suites. Optional unit test infrastructure is provided by [cunit](http://cunit.sourceforge.net).
+libhelium depends on [libuv](https://github.com/libuv/libuv) (>= 0.11.29) for cross-platform network functionality and OpenSSL (>= 1.0.1) for required cipher suites. Optional unit test infrastructure is provided by [cunit](http://cunit.sourceforge.net).
 
 
 ## OS X
@@ -69,7 +69,7 @@ You can install the prerequisite packages (other than cmake and libuv) with:
 
 To build from source:
 
-    git clone https://github.com/joyent/libuv
+    git clone https://github.com/libuv/libuv
     cd libuv
     sh autogen.sh
     ./configure
