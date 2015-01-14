@@ -44,7 +44,7 @@ Should you wish to compile from source, you'll need cmake, libuv and openssl (pl
 
     brew install cmake
     brew install openssl
-    brew install --devel libuv
+    brew install libuv
 
 ## Linux
 
